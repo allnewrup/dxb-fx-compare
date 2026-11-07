@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { color-scheme: light; }
+  body {
+    @apply font-sans text-ink antialiased;
+    background-color: #c9d0d7;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 1px, rgba(0,0,0,.015) 1px 3px),
+      linear-gradient(180deg, #dfe4e9 0%, #c3cad2 100%);
+    background-attachment: fixed;
+  }
+  :focus-visible { outline: 3px solid #3d86f0; outline-offset: 2px; }
+}
+
+@layer components {
+  /* Raised brushed-metal slab */
+  .panel {
+    @apply rounded-2xl border-t border-white/70 shadow-panel;
+    background: linear-gradient(180deg, #f4f6f8 0%, #e3e7ec 100%);
+  }
+  /* Recessed input well */
+  .well {
+    @apply rounded-xl shadow-well border border-steel-300/70 bg-steel-100 text-ink;
+    background-image: linear-gradient(180deg, #dde1e6, #eef0f3);
+  }
+  .field { @apply well px-3 py-2 font-medium w-full min-w-0 outline-none focus:ring-2 focus:ring-sky-light; }
+  .label { @apply font-display text-[12px] font-semibold uppercase tracking-[.14em] text-steel-600; }
+
+  /* Raised buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border-t border-white/60 px-4 py-2 font-semibold shadow-raised
+           transition-[transform,box-shadow] duration-100 select-none active:translate-y-px active:shadow-pressed disabled:opacity-50 disabled:pointer-events-none;
+    background: linear-gradient(180deg, #fbfcfd 0%, #dfe3e8 100%);
+    color: #1b232b;
+  }
+  .btn-primary {
+    @apply text-white border-white/40;
+    background: linear-gradient(180deg, #3d86f0 0%, #0b5fd8 55%, #0847a6 100%);
+    text-shadow: 0 -1px 0 rgba(0,0,0,.35);
+  }
+  .btn-sm { @apply px-3 py-1.5 text-sm rounded-lg; }
+
+  /* Segmented / tab keys: pressed state when active */
+  .key { @apply btn rounded-lg px-3 py-1.5 text-sm; }
+  .key[aria-pressed='true'], .key[aria-selected='true'] {
+    @apply shadow-pressed translate-y-px text-white border-transparent;
+    background: linear-gradient(180deg, #0847a6, #0b5fd8);
+    text-shadow: 0 -1px 0 rgba(0,0,0,.35);
+  }
+
+  /* Physical slide switch */
+  .switch { @apply relative inline-flex h-8 w-[3.6rem] shrink-0 cursor-pointer rounded-full shadow-well border border-steel-300; background: linear-gradient(180deg,#c6ccd3,#e6e9ed); }
+  .switch::after {
+    content: ''; @apply absolute top-0.5 left-0.5 h-6 w-6 rounded-full shadow-raised border-t border-white transition-transform duration-150;
+    background: radial-gradient(circle at 35% 30%, #ffffff, #cdd3da 70%);
+  }
+  .switch[aria-checked='true'] { background: linear-gradient(180deg,#0847a6,#2f78e6); }
+  .switch[aria-checked='true']::after { transform: translateX(1.6rem); }
+
+  /* Exchange board */
+  .board {
+    @apply rounded-xl shadow-boardin border border-black;
+    background: linear-gradient(180deg, #1c2227 0%, #0d1013 100%);
+  }
+  .flip-digit {
+    @apply relative inline-flex items-center justify-center font-mono font-semibold text-led w-[1.15ch] mx-px rounded-[3px];
+    background: linear-gradient(180deg, #2a3138 0%, #1a1f24 49%, #0b0e11 50%, #1d2328 100%);
+    text-shadow: 0 0 8px rgba(255,184,28,.45);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+    padding: .08em .12em;
+    min-width: 1.05ch;
+  }
+  .flip-digit::after { content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(0,0,0,.9); }
+  .flip-sep { @apply font-mono font-semibold text-led px-px; }
+
+  /* Metallic badges */
+  .badge-gold {
+    @apply inline-flex items-center gap-1 rounded-full border-t border-white/80 px-2.5 py-0.5 font-display text-[13px] font-bold uppercase tracking-wider text-brass-600 shadow-raised;
+    background: linear-gradient(135deg, #f8e9b0 0%, #d9b24a 40%, #f2dc8c 55%, #b98d25 100%);
+    text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  }
+  .badge-steel {
+    @apply inline-flex items-center gap-1 rounded-full border-t border-white/80 px-2.5 py-0.5 font-display text-[13px] font-bold uppercase tracking-wider text-steel-600 shadow-raised;
+    background: linear-gradient(135deg, #f5f7f9 0%, #b9c0c8 45%, #eef0f3 60%, #9aa3ae 100%);
+  }
+  .badge-copper {
+    @apply inline-flex items-center gap-1 rounded-full border-t border-white/60 px-2.5 py-0.5 font-display text-[13px] font-bold uppercase tracking-wider text-[#5b2f14] shadow-raised;
+    background: linear-gradient(135deg, #f1c3a0 0%, #c8814f 45%, #ebb893 60%, #a2602f 100%);
+  }
+  .chip { @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-steel-200 text-steel-600 shadow-well; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

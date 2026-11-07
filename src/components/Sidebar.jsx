@@ -1,0 +1,58 @@
+import React from 'react';
+import { Switch } from './ui.jsx';
+
+const RATINGS = [0, 4.0, 4.3, 4.5];
+
+export default function Sidebar({ s, set }) {
+  return (
+    <aside aria-label="Filters" className="panel flex flex-col gap-5 p-4">
+      <h2 className="font-display text-xl font-bold uppercase tracking-wide">Filters</h2>
+
+      <fieldset>
+        <legend className="label mb-2">Minimum Google rating</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {RATINGS.map((r) => (
+            <button key={r} type="button" className="key" aria-pressed={s.minRating === r} onClick={() => set({ minRating: r })}>
+              {r === 0 ? 'Any' : `${r.toFixed(1)}+ ★`}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <div>
+        <span className="label mb-2 block">Availability</span>
+        <Switch id="openNow" checked={s.openNow} onChange={(v) => set({ openNow: v })} off="Any time" on="Open now" />
+        <p className="mt-1.5 text-xs text-steel-500">Uses UAE time (GST).</p>
+      </div>
+
+      <fieldset>
+        <legend className="label mb-2">Emirate</legend>
+        {['Dubai', 'Abu Dhabi'].map((em) => (
+          <label key={em} className="mb-2 flex cursor-pointer items-center gap-3 text-sm font-semibold">
+            <input
+              type="checkbox" className="peer sr-only" checked={s.emirates[em]}
+              onChange={(e) => set({ emirates: { ...s.emirates, [em]: e.target.checked } })}
+            />
+            <span className="well flex h-6 w-6 items-center justify-center !rounded-md text-sky peer-checked:[&>svg]:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-sky-light">
+              <svg width="16" height="16" viewBox="0 0 20 20" className="opacity-0" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10.5l4 4 8-9" /></svg>
+            </span>
+            {em}
+          </label>
+        ))}
+      </fieldset>
+
+      <div>
+        <label htmlFor="sortSel" className="label mb-2 block">Sort by</label>
+        <select id="sortSel" className="field" value={s.sort} onChange={(e) => set({ sort: e.target.value })}>
+          <option value="rate">Best rate</option>
+          <option value="rating">Highest rated</option>
+          <option value="near">Closest / most branches</option>
+        </select>
+      </div>
+
+      <button type="button" className="btn btn-sm" onClick={() => set({ minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate', areaId: 'all' })}>
+        Reset filters
+      </button>
+    </aside>
+  );
+}
