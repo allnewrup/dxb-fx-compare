@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://dxb-fx-compare.vercel.app/sitemap.xml

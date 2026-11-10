@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { AREAS } from './data/seed.js';
 import { getSnapshot, refreshLiveRates, enrichFromGoogle } from './services/fxDataService.js';
-import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates } from './lib/pricing.js';
+import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates, directionsUrl } from './lib/pricing.js';
 import SearchConsole from './components/SearchConsole.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SortTabs from './components/SortTabs.jsx';
@@ -39,6 +39,21 @@ export default function App() {
   const [panel, setPanel] = useState('map');
   const [reviewPid, setReviewPid] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [userLoc, setUserLoc] = useState(null); // {lat, lng, acc}
+  const [geo, setGeo] = useState({ busy: false, err: '' });
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) { setGeo({ busy: false, err: 'Your browser does not support location.' }); return; }
+    setGeo({ busy: true, err: '' });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+        setGeo({ busy: false, err: '' });
+        setS((p) => ({ ...p, sort: 'near' }));
+      },
+      (e) => setGeo({ busy: false, err: e.code === 1 ? 'Location permission was denied. Allow it in your browser settings to see nearby branches.' : 'Could not get your location. Try again.' }),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
+  }, []);
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState({ tone: 'info', text: 'Fetching live market rates…' });
   const panelRef = useRef(null);
@@ -79,21 +94,22 @@ export default function App() {
   const quoteStale = quoteAgeMin > 30;
 
   // ---- derive rows -------------------------------------------------------
+  const origin = userLoc ? [userLoc.lat, userLoc.lng] : area.center;
   const rows = useMemo(() => {
     const out = [];
     for (const p of data.providers) {
       if (p.rating < s.minRating) continue;
       const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b)));
       if (!branches.length) continue;
-      const withDist = branches.map((b) => ({ b, d: km(area.center, [b.lat, b.lng]) })).sort((x, y) => x.d - y.d);
+      const withDist = branches.map((b) => ({ b, d: km(origin, [b.lat, b.lng]) })).sort((x, y) => x.d - y.d);
       const branch = branches.find((b) => b.id === picked[p.id]) ?? withDist[0].b;
       const q = quote(p, data.mid, s.from, s.to, s.channel);
       out.push({ provider: p, branches, branch, nearestKm: withDist[0].d, q, total: convert(q, s.amount, s.mode) });
     }
     return out;
-  }, [data, s, picked, area]);
+  }, [data, s, picked, area, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const specificArea = !['all', 'dubai', 'abudhabi'].includes(s.areaId);
+  const specificArea = !!userLoc || !['all', 'dubai', 'abudhabi'].includes(s.areaId);
   const sorted = useMemo(() => {
     const r = [...rows];
     if (s.sort === 'rate') r.sort((a, b) => (s.mode === 'sell' ? b.total - a.total : a.total - b.total));
@@ -116,14 +132,15 @@ export default function App() {
     rate: { value: `${fmtNum(stats.bestRate.total)} ${s.to}`, sub: stats.bestRate.provider.name },
     rating: { value: `${stats.topRated.provider.rating.toFixed(1)} ★ on Google`, sub: stats.topRated.provider.name },
     near: specificArea
-      ? { value: `${stats.closest.nearestKm.toFixed(1)} km from ${area.label}`, sub: stats.closest.provider.name }
+      ? { value: `${stats.closest.nearestKm.toFixed(1)} km from ${userLoc ? 'you' : area.label}`, sub: stats.closest.provider.name }
       : { value: `${stats.mostBr.branches.length} branches`, sub: stats.mostBr.provider.name },
   } : { rate: { value: '—', sub: '' }, rating: { value: '—', sub: '' }, near: { value: '—', sub: '' } };
 
   const pins = useMemo(() => rows.flatMap((r) => r.branches.map((b) => {
     const rate = s.mode === 'sell' ? r.q.sellRate : r.q.buyRate;
-    return { p: r.provider, b, rate, digits: rateDigits(Math.max(r.q.sellRate, r.q.buyRate)) };
-  })), [rows, s.mode]);
+    return { p: r.provider, b, rate, digits: rateDigits(Math.max(r.q.sellRate, r.q.buyRate)), dist: userLoc ? km(origin, [b.lat, b.lng]) : null };
+  })), [rows, s.mode, userLoc]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nearest = useMemo(() => (userLoc ? [...pins].sort((a, b) => a.dist - b.dist).slice(0, 3) : []), [pins, userLoc]);
   const selected = pins.find((x) => x.p.id === sel?.pid && x.b.id === sel?.bid) ?? null;
 
   const onMap = (pid, bid) => {
@@ -168,6 +185,10 @@ export default function App() {
         <span className="label">I am</span>
         <button type="button" className="key" aria-pressed={s.to === 'AED' && s.mode === 'sell'} onClick={() => set({ from: guessHomeCurrency() ?? 'USD', to: 'AED', mode: 'sell' })}>Visiting: foreign cash → AED</button>
         <button type="button" className="key" aria-pressed={s.from === 'AED' && s.mode === 'sell'} onClick={() => set({ from: 'AED', to: s.to === 'AED' ? 'INR' : s.to, mode: 'sell' })}>Living here: sending AED home</button>
+        <span className="mx-1 hidden h-5 w-px bg-steel-300 sm:inline-block" />
+        <button type="button" className="key" aria-pressed={!!userLoc} onClick={locate} disabled={geo.busy}>{geo.busy ? 'Locating…' : userLoc ? '📍 Location on' : '📍 Use my location'}</button>
+        {userLoc && <button type="button" className="text-sm font-semibold text-sky underline-offset-2 hover:underline" onClick={() => setUserLoc(null)}>Clear</button>}
+        {geo.err && <span className="text-sm text-[#a3261b]" role="alert">{geo.err}</span>}
       </div>
 
       <SearchConsole s={s} set={set} onRefresh={() => refresh(false)} refreshing={refreshing} />
@@ -198,6 +219,29 @@ export default function App() {
 
         <main className="flex min-w-0 flex-col gap-3" aria-label="Results">
           <SortTabs sort={s.sort} set={set} summary={summary} />
+          {userLoc && (
+            <section className="panel border-l-4 border-go p-3" aria-label="Nearest branches to you">
+              <h2 className="font-display text-lg font-bold uppercase tracking-wide">Nearest to you</h2>
+              {nearest.length === 0 ? <p className="text-sm text-steel-600">No branches match the current filters.</p> : (
+                <ol className="mt-2 grid gap-2 md:grid-cols-3">
+                  {nearest.map((x, i) => (
+                    <li key={x.b.id} className="well flex flex-col gap-1 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-go text-xs font-bold text-white">{i + 1}</span>
+                        <strong className="min-w-0 truncate">{x.p.name}</strong>
+                      </div>
+                      <p className="text-sm text-steel-600">{x.b.area} · <strong className="text-ink">{x.dist < 1 ? `${Math.round(x.dist * 1000)} m` : `${x.dist.toFixed(1)} km`}</strong> away · {fmtNum(x.rate, x.digits)}</p>
+                      <div className="flex gap-2">
+                        <button type="button" className="btn btn-sm" onClick={() => onMap(x.p.id, x.b.id)}>On map</button>
+                        <a className="btn btn-sm" href={directionsUrl(x.b, x.p)} target="_blank" rel="noreferrer">Directions ↗</a>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="mt-2 text-xs text-steel-500">Straight-line distance from your current position{userLoc.acc > 500 ? ` (location accurate to about ${Math.round(userLoc.acc)} m)` : ''}.</p>
+            </section>
+          )}
           <p className="px-1 text-sm text-steel-600">
             {sorted.length} provider{sorted.length === 1 ? '' : 's'} · {fmtNum(s.amount, 0)} {s.from} to {s.to} · {s.mode === 'sell' ? 'selling' : 'buying'} {s.from} · {s.channel === 'bank' ? 'bank transfer' : 'cash'}
           </p>
@@ -209,7 +253,7 @@ export default function App() {
           )}
           {sorted.map((r) => (
             <ProviderCard
-              key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost}
+              key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost} distKm={userLoc ? km(origin, [r.branch.lat, r.branch.lng]) : null}
               selected={sel?.pid === r.provider.id}
               badges={badgeFor(r)}
               savings={stats ? (s.mode === 'sell' ? r.total - stats.min : stats.max - r.total) : 0}
@@ -227,7 +271,7 @@ export default function App() {
             <button role="tab" type="button" className="key" aria-selected={panel === 'reviews'} onClick={() => setPanel('reviews')}>Google reviews</button>
           </div>
           {panel === 'map' ? (
-            <MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} />
+            <MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} user={userLoc} nearIds={nearest.map((x) => x.b.id)} />
           ) : (
             <ReviewsDrawer provider={data.providers.find((p) => p.id === reviewPid)} onClose={() => setPanel('map')} />
           )}

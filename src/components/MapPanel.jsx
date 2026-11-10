@@ -7,21 +7,24 @@ const UAE_CENTER = [24.85, 54.8];
 const TAG_W = 84, TAG_H = 34; // tag size incl. pointer, used for grouping overlapping tags
 
 /** Group pins whose tags would overlap at this zoom. Positions are never nudged: a group is shown as a count bubble. */
-function group(map, pins, selectedId) {
+function group(map, pins, selectedId, nearRank) {
   const z = map.getZoom();
   const groups = [];
   for (const pin of pins) {
     const pt = map.project([pin.b.lat, pin.b.lng], z);
-    const g = pin.b.id === selectedId ? null : groups.find((c) => !c.fixed && Math.abs(c.pt.x - pt.x) < TAG_W && Math.abs(c.pt.y - pt.y) < TAG_H);
+    const keep = pin.b.id === selectedId || nearRank[pin.b.id];
+    const g = keep ? null : groups.find((c) => !c.fixed && Math.abs(c.pt.x - pt.x) < TAG_W && Math.abs(c.pt.y - pt.y) < TAG_H);
     if (g) g.members.push(pin);
-    else groups.push({ pt, members: [pin], fixed: pin.b.id === selectedId });
+    else groups.push({ pt, members: [pin], fixed: !!keep });
   }
   return groups;
 }
 
-const tagHtml = (t, cls) => `<div class="rate-tag ${cls}"><span class="mk" style="background:${t.p.hue}">${t.p.mark}</span><span class="rt">${t.rate.toFixed(t.digits)}</span></div>`;
+const tagHtml = (t, cls, rank) => `<div class="rate-tag ${cls}">${rank ? `<span class="rk">${rank}</span>` : ''}<span class="mk" style="background:${t.p.hue}">${t.p.mark}</span><span class="rt">${t.rate.toFixed(t.digits)}</span></div>`;
 
-export default function MapPanel({ pins, selectedId, onSelect, bestId, selected }) {
+export default function MapPanel({ pins, selectedId, onSelect, bestId, selected, user, nearIds = [] }) {
+  const nearRank = Object.fromEntries(nearIds.map((id, i) => [id, i + 1]));
+  const nearKey = nearIds.join('|');
   const el = useRef(null);
   const map = useRef(null);
   const layer = useRef(null);
@@ -62,14 +65,15 @@ export default function MapPanel({ pins, selectedId, onSelect, bestId, selected 
     const m = map.current, lg = layer.current;
     if (!m || !lg) return;
     lg.clearLayers();
-    for (const g of group(m, pins, selectedId)) {
+    for (const g of group(m, pins, selectedId, nearRank)) {
       if (g.members.length === 1) {
         const t = g.members[0];
-        const cls = `${t.b.id === selectedId ? 'sel' : ''} ${t.p.id === bestId ? 'best' : ''}`;
+        const rank = nearRank[t.b.id];
+        const cls = `${t.b.id === selectedId ? 'sel' : ''} ${t.p.id === bestId ? 'best' : ''} ${rank ? 'near' : ''}`;
         L.marker([t.b.lat, t.b.lng], {
-          icon: L.divIcon({ className: 'rate-tag-icon', html: tagHtml(t, cls), iconSize: [TAG_W, 26], iconAnchor: [TAG_W / 2, TAG_H - 2] }),
-          zIndexOffset: t.b.id === selectedId ? 1000 : t.p.id === bestId ? 500 : 0,
-          title: `${t.p.name}, ${t.b.area}: ${t.rate.toFixed(t.digits)}`,
+          icon: L.divIcon({ className: 'rate-tag-icon', html: tagHtml(t, cls, rank), iconSize: [TAG_W, 26], iconAnchor: [TAG_W / 2, TAG_H - 2] }),
+          zIndexOffset: t.b.id === selectedId ? 1000 : rank ? 800 : t.p.id === bestId ? 500 : 0,
+          title: `${t.p.name}, ${t.b.area}: ${t.rate.toFixed(t.digits)}${rank ? ` (#${rank} nearest to you)` : ''}`,
         }).on('click', () => onSelect(t.p.id, t.b.id)).addTo(lg);
       } else {
         const ll = L.latLngBounds(g.members.map((t) => [t.b.lat, t.b.lng]));
@@ -79,7 +83,26 @@ export default function MapPanel({ pins, selectedId, onSelect, bestId, selected 
         }).on('click', () => m.fitBounds(ll, { padding: [60, 60], maxZoom: 17 })).addTo(lg);
       }
     }
-  }, [pins, selectedId, bestId, zoom, onSelect]);
+  }, [pins, selectedId, bestId, zoom, onSelect, nearKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "You are here" marker, then frame the user together with the nearest branches.
+  const userLayer = useRef(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    userLayer.current?.remove();
+    userLayer.current = null;
+    if (!user) return;
+    const lg = L.layerGroup().addTo(m);
+    if (user.acc) L.circle([user.lat, user.lng], { radius: Math.min(user.acc, 2000), color: '#0b5fd8', weight: 1, fillOpacity: 0.08, interactive: false }).addTo(lg);
+    L.marker([user.lat, user.lng], {
+      icon: L.divIcon({ className: 'rate-tag-icon', html: '<div class="user-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+      zIndexOffset: 2000, title: 'You are here',
+    }).addTo(lg);
+    userLayer.current = lg;
+    const pts = [[user.lat, user.lng], ...pins.filter((x) => nearRank[x.b.id]).map((x) => [x.b.lat, x.b.lng])];
+    m.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 15 });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const src = selected ? `https://www.google.com/maps?q=${selected.b.lat},${selected.b.lng}&z=16&output=embed` : null;
 
@@ -93,7 +116,7 @@ export default function MapPanel({ pins, selectedId, onSelect, bestId, selected 
       </div>
 
       <p className="text-xs text-steel-600">
-        {pins.length} branch{pins.length === 1 ? '' : 'es'} shown · each tag's pointer marks the branch location and shows the rate for your transaction. Blue circles group tags that overlap, so click one to zoom in.
+        {pins.length} branch{pins.length === 1 ? '' : 'es'} shown · each tag's pointer marks the branch location and shows the rate for your transaction.{user ? ' Green numbered tags are the branches nearest to you.' : ''} Blue circles group tags that overlap, so click one to zoom in.
       </p>
 
       {selected && (

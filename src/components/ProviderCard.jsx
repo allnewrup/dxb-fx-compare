@@ -7,7 +7,7 @@ function estimateLabel(quotedAt, live) {
   return `Estimate · market quote ${ageLabel(quotedAt)} old`;
 }
 
-export default function ProviderCard({ row, s, quotedAt, live, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
+export default function ProviderCard({ row, s, quotedAt, live, distKm, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
   const { provider: p, branch: b, branches, q, total } = row;
   const d = rateDigits(Math.max(q.sellRate, q.buyRate));
   const open = isOpenNow(b);
@@ -49,6 +49,7 @@ export default function ProviderCard({ row, s, quotedAt, live, selected, onMap, 
               <Icon.pin className="text-sky" />
               <span className="font-semibold">{b.area}, {b.emirate}</span>
               <Pill tone={open ? 'go' : 'off'}>{open ? 'Open now' : 'Closed'}</Pill>
+              {distKm != null && <span className="rounded-full bg-sky px-2 py-0.5 text-xs font-semibold text-white">{distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`} from you</span>}
             </div>
             <p className="text-sm text-steel-600">{b.address} · {hoursLabel(b)}</p>
             {branches.length > 1 && (

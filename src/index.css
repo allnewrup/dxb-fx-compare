@@ -120,3 +120,9 @@
   font: 700 15px 'Barlow Condensed', sans-serif; cursor: pointer;
 }
 .leaflet-container { font-family: inherit; }
+
+.rate-tag.near { border-color: #12805c; border-width: 2px; }
+.rate-tag.near::after { border-color: #12805c; border-width: 2px; }
+.rate-tag .rk { position: absolute; top: -9px; right: -9px; width: 18px; height: 18px; border-radius: 50%; background: #12805c; color: #fff; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font: 700 11px 'Barlow Condensed', sans-serif; }
+.user-dot { width: 18px; height: 18px; border-radius: 50%; background: #0b5fd8; border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(11,95,216,.5), 0 1px 4px rgba(0,0,0,.5); animation: pulse 2s infinite; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 14px rgba(11,95,216,0), 0 1px 4px rgba(0,0,0,.5); } 100% { box-shadow: 0 0 0 0 rgba(11,95,216,0), 0 1px 4px rgba(0,0,0,.5); } }
