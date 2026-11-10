@@ -115,7 +115,9 @@ export default function App() {
   const specificArea = !!userLoc || !['all', 'dubai', 'abudhabi'].includes(s.areaId);
   const sorted = useMemo(() => {
     const r = [...rows];
-    if (s.sort === 'rate') r.sort((a, b) => (s.mode === 'sell' ? b.total - a.total : a.total - b.total));
+    if (s.sort === 'high') r.sort((a, b) => b.total - a.total);
+    else if (s.sort === 'low') r.sort((a, b) => a.total - b.total);
+    else if (s.sort === 'rate') r.sort((a, b) => (s.mode === 'sell' ? b.total - a.total : a.total - b.total));
     else if (s.sort === 'rating') r.sort((a, b) => b.provider.rating - a.provider.rating || b.provider.reviewCount - a.provider.reviewCount);
     else r.sort((a, b) => (specificArea ? a.nearestKm - b.nearestKm : b.branches.length - a.branches.length) || b.provider.rating - a.provider.rating);
     return r;
@@ -264,9 +266,16 @@ export default function App() {
               <p className="mt-2 text-xs text-steel-500">Straight-line distance from your current position{userLoc.acc > 500 ? ` (location accurate to about ${Math.round(userLoc.acc)} m)` : ''}.</p>
             </section>
           )}
-          <p ref={resultsRef} className="scroll-mt-4 px-1 text-sm text-steel-600">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <p ref={resultsRef} className="scroll-mt-4 min-w-0 flex-1 text-sm text-steel-600">
             {s.query.trim() && <>Results for <strong className="text-ink">"{s.query.trim()}"</strong> · </>}{sorted.length} provider{sorted.length === 1 ? '' : 's'} · {fmtNum(s.amount, 0)} {s.from} to {s.to} · {s.mode === 'sell' ? 'selling' : 'buying'} {s.from} · {s.channel === 'bank' ? 'bank transfer' : 'cash'}
           </p>
+            <div className="flex items-center gap-1.5" role="group" aria-label="Order by rate">
+              <span className="label mr-1">Rate</span>
+              <button type="button" className="key" aria-pressed={s.sort === 'high'} onClick={() => set({ sort: s.sort === 'high' ? 'rate' : 'high' })}>High → Low</button>
+              <button type="button" className="key" aria-pressed={s.sort === 'low'} onClick={() => set({ sort: s.sort === 'low' ? 'rate' : 'low' })}>Low → High</button>
+            </div>
+          </div>
           {sorted.length === 0 && (
             <div className="panel p-8 text-center">
               <p className="font-display text-xl font-bold uppercase">No exchange houses match</p>

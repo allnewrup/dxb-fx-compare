@@ -47,6 +47,8 @@ export default function Sidebar({ s, set }) {
         <label htmlFor="sortSel" className="label mb-2 block">Sort by</label>
         <select id="sortSel" className="field" value={s.sort} onChange={(e) => set({ sort: e.target.value })}>
           <option value="rate">Best rate</option>
+          <option value="high">Rate: high to low</option>
+          <option value="low">Rate: low to high</option>
           <option value="rating">Top rated</option>
           <option value="near">Closest</option>
         </select>
