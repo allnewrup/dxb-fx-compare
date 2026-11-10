@@ -40,14 +40,15 @@ Dirham Desk is a React single-page app that lines up exchange houses (Al Ansari,
 ### Results
 - **Three quick-sort tabs** in the Skyscanner style: *Best Rate*, *Highest Rated*, *Closest / Most Branches*. Each tab shows its current winner as a summary line.
   - *Closest* ranks by distance from the selected neighbourhood. With a whole-emirate filter it ranks by branch count.
-- **Provider cards** show the logo plate, Google rating and review count, the nearest matching branch, an open/closed pill (UAE time), branch chips to switch branch, a split-flap board with *We buy* and *We sell* rates, the converted total, fee, savings against the worst offer, and a last-updated line.
+- **Provider cards** show the logo plate, Google rating and review count, the nearest matching branch, an open/closed pill (UAE time), branch chips to switch branch, a split-flap board with estimated *Sell* and *Buy* rates, the converted total, fee, savings against the worst offer, the cost versus the mid-market rate, and the age of the market quote.
 - **Metal badges** mark *Best rate* (gold), *Top rated* (steel) and *Most branches* (copper).
 - **Side-by-side tray**: tick "Compare side-by-side" on 2 to 4 cards and a pinned multi-column table opens. The best value in each row is highlighted.
 - **Left sidebar filters**: minimum Google rating, open now, emirate checkboxes, sort order, reset.
 
 ### Map and reviews
-- **Rate pins map** shows every filtered branch as a tag carrying the provider mark and the rate for your transaction. Tags avoid each other, with leader lines back to the true position. The map zooms to fit the visible pins.
-- **Google Maps tab** embeds the selected branch from Google.
+- **Rate pins map** is a real map (Leaflet on OpenStreetMap tiles). Every filtered branch is a tag carrying the provider mark and the rate for your transaction, and the tag's pointer sits exactly on the branch coordinate. Tags that would overlap group into a count circle; click it to zoom in.
+- **Use my location** (browser geolocation) marks you on the map, features the three nearest branches with straight-line distances, shows a distance on each card and re-ranks the "Closest" sort.
+- **Google Maps button** opens an embed of the selected branch in place, and minimizes back into a button.
 - **Get directions** on every branch deep-links to Google Maps navigation.
 - **Reviews drawer** shows aggregate rating, star ratings, reviewer, branch visited and relative time, filterable by branch.
 
@@ -157,7 +158,7 @@ dxb-fx-compare/
         ├── Sidebar.jsx           Rating, open now, emirate, sort
         ├── SortTabs.jsx          Best Rate / Highest Rated / Closest tabs
         ├── ProviderCard.jsx      Result card with rate board
-        ├── MapPanel.jsx          Rate-pin map and Google Maps embed
+        ├── MapPanel.jsx          Leaflet rate-pin map, location marker and Google Maps button
         ├── ReviewsDrawer.jsx     Reviews view
         ├── CompareTray.jsx       Pinned side-by-side table
         ├── QrBadge.jsx           Header badge, full-screen QR modal, app link constant
@@ -266,8 +267,8 @@ For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo
 - Provider rates are modelled, not scraped. The market rate is accurate, the counter rate is an estimate.
 - Ratings, reviews, hours and branch pins are sample data until the Places proxy is connected.
 - The Yahoo endpoint is unofficial. It can change or block requests without notice.
-- With "All UAE" selected, around 37 pins fall in a narrow coastal strip. Pick an emirate or neighbourhood for a readable map.
-- The Google Maps tab embeds one branch at a time. A multi-pin Google map would need the Maps JavaScript API and a key.
+- Branch coordinates are placeholders (area centre plus a small offset) until the Places proxy supplies real ones, so "nearest" is only as accurate as that data.
+- The Google Maps button embeds one branch at a time. A multi-pin Google map would need the Maps JavaScript API and a key.
 - Layout has been checked at desktop width. Phone layouts use stacking rules but have had less testing.
 - No automated tests yet.
 
