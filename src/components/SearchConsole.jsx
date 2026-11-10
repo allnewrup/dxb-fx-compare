@@ -10,7 +10,7 @@ export default function SearchConsole({ s, set, onRefresh, refreshing }) {
   };
   return (
     <section aria-label="Search console" className="panel p-3 md:p-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[auto_minmax(150px,1fr)_auto_minmax(170px,1fr)_auto] xl:items-end">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[auto_minmax(150px,1fr)_minmax(170px,1fr)_auto] xl:items-end">
         {/* Currency pair */}
         <div className="flex items-end gap-2 md:col-span-2 xl:col-span-1">
           <label className="min-w-0 flex-1 xl:w-40">
@@ -47,9 +47,9 @@ export default function SearchConsole({ s, set, onRefresh, refreshing }) {
         </label>
 
         {/* Transaction type */}
-        <div className="min-w-0">
-          <span className="label">Transaction</span>
-          <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="min-w-0 md:col-span-2 xl:order-last xl:col-span-4 xl:flex xl:items-center xl:gap-4">
+          <span className="label xl:mt-0">Transaction</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-8 gap-y-2 xl:mt-0">
             <Switch id="mode" checked={s.mode === 'buy'} onChange={(v) => set({ mode: v ? 'buy' : 'sell' })} off={`Sell ${s.from}`} on={`Buy ${s.from}`} />
             <Switch id="channel" checked={s.channel === 'bank'} onChange={(v) => set({ channel: v ? 'bank' : 'cash' })} off="Cash" on="Bank transfer" />
           </div>

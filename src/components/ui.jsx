@@ -24,7 +24,7 @@ export function Stars({ value, size = 14 }) {
 /** Two-position slide switch with the labels on either side, like a rocker on a till. */
 export function Switch({ id, checked, onChange, off, on }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 whitespace-nowrap">
       <span className={`text-sm font-semibold ${!checked ? 'text-ink' : 'text-steel-500'}`}>{off}</span>
       <button id={id} type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="switch" aria-label={`${off} or ${on}`} />
       <span className={`text-sm font-semibold ${checked ? 'text-ink' : 'text-steel-500'}`}>{on}</span>
