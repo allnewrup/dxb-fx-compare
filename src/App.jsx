@@ -209,7 +209,7 @@ export default function App() {
         <div className="flex items-center gap-3">
           <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl">AED</span>
           <div>
-            <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-wide">Dirham Desk</h1>
+            <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-wide">Xchange Desk</h1>
             <p className="text-sm text-steel-600">Compare money exchange rates across UAE exchange houses &amp; banks</p>
           </div>
         </div>
@@ -355,7 +355,7 @@ export default function App() {
       </section>
 
       <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
-        <p><strong className="text-ink">About Dirham Desk.</strong> Dirham Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
+        <p><strong className="text-ink">About Xchange Desk.</strong> Xchange Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
         <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are a pre-loaded sample for the first eight exchange houses only, and are not loaded for the rest. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
       </footer>
 

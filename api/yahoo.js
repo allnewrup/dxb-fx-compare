@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   qs.delete('path');
   try {
     const r = await fetch(`https://query1.finance.yahoo.com/${path}?${qs}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; dirham-desk)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; xchange-desk)' },
     });
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
     res.status(r.status).setHeader('Content-Type', 'application/json').send(await r.text());

@@ -1,10 +1,10 @@
-# Dirham Desk
+# Xchange Desk
 
 **Compare money exchange rates across Dubai and Abu Dhabi, side by side.**
 
-Dirham Desk is a React single-page app that lines up UAE exchange houses and banks (127 providers and about 890 branches across all seven emirates, including Al Ansari, Al Fardan, LuLu, UAE Exchange, Orient, Travelex, Emirates NBD and FAB) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and a reviews drawer. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
+Xchange Desk is a React single-page app that lines up UAE exchange houses and banks (127 providers and about 890 branches across all seven emirates, including Al Ansari, Al Fardan, LuLu, UAE Exchange, Orient, Travelex, Emirates NBD and FAB) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and a reviews drawer. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
 
-![Dirham Desk screenshot](docs/screenshot.png)
+![Xchange Desk screenshot](docs/screenshot.png)
 
 ---
 
@@ -182,7 +182,7 @@ enrichFromGoogle(list) // → { providers, enriched }  no-op until VITE_PLACES_P
 | Setting | Where | Purpose |
 | --- | --- | --- |
 | `VITE_PLACES_PROXY` | `.env` | URL of your Google Places proxy. Leave empty to use the sample ratings and reviews. |
-| `APP_DOWNLOAD_URL` | `src/components/QrBadge.jsx` | The link encoded in the QR code. **It is a placeholder (`https://example.com/get-dirham-desk`). Replace it with your real app smart link before sharing the app.** |
+| `APP_DOWNLOAD_URL` | `src/components/QrBadge.jsx` | The link encoded in the QR code. **It is a placeholder (`https://example.com/get-xchange-desk`). Replace it with your real app smart link before sharing the app.** |
 | Refresh interval | `src/App.jsx` (`setInterval(..., 60000)`) | How often live rates reload. |
 | Providers, spreads, fees | `src/data/seed.js` | Per-provider `margin`, `bias`, `fee`, branches. |
 
@@ -228,7 +228,7 @@ import express from 'express';
 const app = express();
 app.use('/api/yahoo', async (req, res) => {
   const r = await fetch(`https://query1.finance.yahoo.com${req.url}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; dirham-desk)' },
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; xchange-desk)' },
   });
   res.status(r.status).type('json').send(await r.text());
 });
@@ -297,7 +297,7 @@ The provider list is built from **OpenStreetMap** (© OpenStreetMap contributors
 
 ## Disclaimer
 
-Dirham Desk is an independent comparison tool. It is not affiliated with, endorsed by or sponsored by any exchange house named in it, and provider names appear only to identify the businesses being compared. Monogram plates are placeholders, not official logos. Rates shown are indicative and not an offer. Confirm the final rate, fee and any limits with the provider before you transact.
+Xchange Desk is an independent comparison tool. It is not affiliated with, endorsed by or sponsored by any exchange house named in it, and provider names appear only to identify the businesses being compared. Monogram plates are placeholders, not official logos. Rates shown are indicative and not an offer. Confirm the final rate, fee and any limits with the provider before you transact.
 
 ## Licence
 

@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { Icon } from './ui.jsx';
 
 // Replace with the real smart-link (e.g. an app.link / onelink URL that routes iOS → App Store, Android → Play).
-export const APP_DOWNLOAD_URL = 'https://example.com/get-dirham-desk';
+export const APP_DOWNLOAD_URL = 'https://example.com/get-xchange-desk';
 
 export function useQr(size) {
   const [src, setSrc] = useState('');

@@ -9,7 +9,7 @@ const yahoo = {
     target: 'https://query1.finance.yahoo.com',
     changeOrigin: true,
     rewrite: (p) => p.replace(/^\/api\/yahoo/, ''),
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; dirham-desk)' },
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; xchange-desk)' },
   },
 };
 
