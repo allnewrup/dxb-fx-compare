@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { AREAS } from './data/seed.js';
 import { getSnapshot, refreshLiveRates, enrichFromGoogle } from './services/fxDataService.js';
-import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits } from './lib/pricing.js';
+import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates } from './lib/pricing.js';
 import SearchConsole from './components/SearchConsole.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SortTabs from './components/SortTabs.jsx';
@@ -19,11 +19,20 @@ const BADGE = {
 
 export default function App() {
   const [data, setData] = useState(getSnapshot);
-  const [s, setS] = useState({
-    from: 'AED', to: 'INR', amount: 5000, amountText: '5000', mode: 'sell', channel: 'cash', areaId: 'all',
+  const [s, setS] = useState(() => {
+    const home = guessHomeCurrency(); // visitors start as "foreign cash -> AED"; UAE locales keep AED -> INR
+    return {
+    from: home ?? 'AED', to: home ? 'AED' : 'INR', amount: 5000, amountText: '5000', mode: 'sell', channel: 'cash', areaId: 'all',
     minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate',
+    };
   });
-  const set = useCallback((patch) => setS((p) => ({ ...p, ...patch })), []);
+  const set = useCallback((patch) => setS((p) => {
+    const next = { ...p, ...patch };
+    // One source of truth for location: the area dropdown and the emirate ticks always agree.
+    if ('areaId' in patch && !('emirates' in patch)) next.emirates = emiratesForArea(patch.areaId);
+    else if ('emirates' in patch && !('areaId' in patch)) next.areaId = areaForEmirates(patch.emirates, p.areaId);
+    return next;
+  }), []);
   const [compare, setCompare] = useState([]);
   const [picked, setPicked] = useState({});
   const [sel, setSel] = useState(null); // {pid, bid}
@@ -44,8 +53,8 @@ export default function App() {
     try {
       const live = await refreshLiveRates();
       const enriched = await enrichFromGoogle(providersRef.current);
-      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
-      setStatus({ tone: 'ok', text: `Live market rates from ${live.host}, quote time ${fmtTime(live.quotedAt)} (UAE time). Provider rates are the market rate plus each provider's modelled spread.` });
+      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, quoteTimes: live.quoteTimes, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
+      setStatus({ tone: 'ok', text: `Market rate from ${live.host}, fetched ${fmtTime(live.updatedAt)} (UAE time).` });
     } catch (e) {
       setStatus({ tone: 'err', text: silent ? `${e.message} Retrying every minute.` : e.message });
     } finally {
@@ -61,6 +70,14 @@ export default function App() {
   }, [refresh]);
 
   const area = AREAS.find((a) => a.id === s.areaId);
+
+  // Timestamp of the market quote behind THIS pair (oldest of the two currencies, since both feed the cross rate).
+  const pairQuotedAt = useMemo(() => {
+    const times = data.quoteTimes ? [s.from, s.to].map((c) => data.quoteTimes[c]).filter(Boolean) : [];
+    return times.length ? new Date(Math.min(...times.map((d) => d.getTime()))) : data.quotedAt;
+  }, [data.quoteTimes, data.quotedAt, s.from, s.to]);
+  const quoteAgeMin = pairQuotedAt ? (Date.now() - pairQuotedAt.getTime()) / 60000 : 0;
+  const quoteStale = quoteAgeMin > 30;
 
   // ---- derive rows -------------------------------------------------------
   const rows = useMemo(() => {
@@ -148,15 +165,31 @@ export default function App() {
         <QrBadge onOpen={() => setQrOpen(true)} />
       </header>
 
+      <div className="mb-2 flex flex-wrap items-center gap-2" role="group" aria-label="Quick setup">
+        <span className="label">I am</span>
+        <button type="button" className="key" aria-pressed={s.to === 'AED' && s.mode === 'sell'} onClick={() => set({ from: guessHomeCurrency() ?? 'USD', to: 'AED', mode: 'sell' })}>Visiting: foreign cash → AED</button>
+        <button type="button" className="key" aria-pressed={s.from === 'AED' && s.mode === 'sell'} onClick={() => set({ from: 'AED', to: s.to === 'AED' ? 'INR' : s.to, mode: 'sell' })}>Living here: sending AED home</button>
+      </div>
+
       <SearchConsole s={s} set={set} onRefresh={() => refresh(false)} refreshing={refreshing} />
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="board flex items-center gap-3 px-3 py-1.5" aria-label="Market mid rate">
           <span className="font-display text-xs font-semibold uppercase tracking-[.16em] text-steel-400">{data.liveHost ? 'Live market' : 'Offline sample'}</span>
           <span className="font-mono text-sm font-semibold text-led">1 {s.from} = {(data.mid[s.to] / data.mid[s.from]).toFixed(rateDigits(data.mid[s.to] / data.mid[s.from]))} {s.to}</span>
-          {data.quotedAt && <span className="hidden text-xs text-steel-400 sm:inline">quote {fmtTime(data.quotedAt)}</span>}
+          {pairQuotedAt && <span className={`text-xs ${quoteStale ? 'font-semibold text-led' : 'text-steel-400'}`}>quote {fmtTime(pairQuotedAt)} · {ageLabel(pairQuotedAt)} old</span>}
         </div>
         <p className={`min-w-0 flex-1 text-sm ${toneCls}`} role="status" aria-live="polite">{status.text}</p>
+      </div>
+
+      {quoteStale && (
+        <p className="mt-2 rounded-lg border border-brass-400 bg-brass-200/60 px-3 py-2 text-sm text-brass-600" role="alert">
+          <strong>The market quote for {s.from}/{s.to} is {ageLabel(pairQuotedAt)} old.</strong> Currency markets may be closed (weekends) or the feed may be delayed, so treat the numbers below as rough guides.
+        </p>
+      )}
+
+      <div className="mt-2 rounded-lg border border-steel-300 bg-white/60 px-3 py-2 text-sm text-steel-600">
+        <strong className="text-ink">These are estimates, not counter rates.</strong> Each provider's figure is the market rate plus that provider's typical spread. Exchange houses don't publish live rates, so the final rate and fees are set at the counter.
       </div>
 
       <div className="mt-3 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_minmax(0,440px)]">
@@ -177,7 +210,7 @@ export default function App() {
           )}
           {sorted.map((r) => (
             <ProviderCard
-              key={r.provider.id} row={r} s={s} updatedAt={data.updatedAt}
+              key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost}
               selected={sel?.pid === r.provider.id}
               badges={badgeFor(r)}
               savings={stats ? (s.mode === 'sell' ? r.total - stats.min : stats.max - r.total) : 0}
@@ -202,8 +235,19 @@ export default function App() {
         </div>
       </div>
 
-      <footer className="mt-8 text-xs leading-relaxed text-steel-600">
-        <p>Indicative rates only. Mid-market rates come from a public rate feed when you refresh; provider rates are modelled from each exchange house's typical spread, and ratings, review counts, pins and reviews are a pre-loaded sample. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
+      <section aria-label="What to bring" className="panel mt-6 p-4 text-sm leading-relaxed text-steel-600">
+        <h2 className="font-display text-xl font-bold uppercase tracking-wide text-ink">What to bring</h2>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li><strong className="text-ink">Photo ID.</strong> Exchange houses in the UAE ask for your passport (visitors) or Emirates ID (residents) for every transaction.</li>
+          <li><strong className="text-ink">Cash vs. card.</strong> Cash gets the board rate with no fee here; bank transfers add a flat fee but a tighter spread. Some branches take cards, so ask first.</li>
+          <li><strong className="text-ink">Limits.</strong> Larger amounts can trigger extra ID or source-of-funds checks. Ask the branch before you travel with a large sum.</li>
+          <li><strong className="text-ink">Opening hours.</strong> The hours shown are typical sample hours, so confirm them with Google Maps or the branch.</li>
+        </ul>
+      </section>
+
+      <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
+        <p><strong className="text-ink">About Dirham Desk.</strong> Dirham Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
+        <p>Indicative rates only. Market rates come from a public feed (Yahoo Finance FX spot) when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, and ratings, review counts, pins and reviews are a pre-loaded sample. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
       </footer>
 
       {compareRows.length >= 2 && <CompareTray rows={compareRows} s={s} onRemove={toggleCompare} onClear={() => setCompare([])} />}

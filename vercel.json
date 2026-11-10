@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/api/yahoo/:path*", "destination": "/api/yahoo?path=:path*" }]
+}

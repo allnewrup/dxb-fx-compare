@@ -69,3 +69,39 @@ export function relTime(daysAgo) {
   if (daysAgo < 30) return `${Math.round(daysAgo / 7)} weeks ago`;
   return `${Math.round(daysAgo / 30)} month${Math.round(daysAgo / 30) === 1 ? '' : 's'} ago`;
 }
+
+/** Emirates implied by the area dropdown, so the top bar and the sidebar never disagree. */
+export function emiratesForArea(areaId) {
+  const a = AREAS.find((x) => x.id === areaId);
+  if (!a || !a.emirate) return { Dubai: true, 'Abu Dhabi': true };
+  return { Dubai: a.emirate === 'Dubai', 'Abu Dhabi': a.emirate === 'Abu Dhabi' };
+}
+
+/** Area dropdown value implied by ticking emirates in the sidebar (keeps a neighbourhood if it still fits). */
+export function areaForEmirates(em, currentAreaId) {
+  const cur = AREAS.find((x) => x.id === currentAreaId);
+  if (em.Dubai && em['Abu Dhabi']) return 'all';
+  if (em.Dubai) return cur?.emirate === 'Dubai' ? currentAreaId : 'dubai';
+  if (em['Abu Dhabi']) return cur?.emirate === 'Abu Dhabi' ? currentAreaId : 'abudhabi';
+  return currentAreaId;
+}
+
+/** "3 min", "2 h 10 min", "1 d" for a timestamp's age. */
+export function ageLabel(date, now = Date.now()) {
+  const m = Math.max(0, Math.round((now - date.getTime()) / 60000));
+  if (m < 2) return 'under 2 min';
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} h${m % 60 ? ` ${m % 60} min` : ''}`;
+  return `${Math.floor(h / 24)} d`;
+}
+
+const REGION_CCY = { US: 'USD', GB: 'GBP', IN: 'INR', PH: 'PHP', PK: 'PKR', SA: 'SAR', DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', IE: 'EUR', AT: 'EUR', PT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR' };
+/** Best guess of the visitor's home currency from the browser locale; USD if unknown, null for UAE locales. */
+export function guessHomeCurrency() {
+  try {
+    const region = new Intl.Locale(navigator.language).maximize().region;
+    if (region === 'AE') return null; // likely a resident
+    return REGION_CCY[region] ?? 'USD';
+  } catch { return 'USD'; }
+}

@@ -61,10 +61,11 @@ async function fromYahoo() {
   );
   const usd = { USD: 1 };
   let quotedAt = Infinity;
-  for (const [code, price, ts] of quotes) { usd[code] = price; quotedAt = Math.min(quotedAt, ts); }
+  const quoteTimes = {};
+  for (const [code, price, ts] of quotes) { usd[code] = price; quoteTimes[code] = new Date(ts); quotedAt = Math.min(quotedAt, ts); }
   const mid = {};
   for (const { code } of CURRENCIES) mid[code] = usd[code] / usd.AED;
-  return { mid, updatedAt: new Date(), quotedAt: new Date(quotedAt), host: 'Yahoo Finance FX spot' };
+  return { mid, updatedAt: new Date(), quotedAt: new Date(quotedAt), quoteTimes, host: 'Yahoo Finance FX spot' };
 }
 
 async function fromRateApi() {

@@ -1,20 +1,23 @@
 import React from 'react';
 import { Mark, Stars, FlipRate, Pill, Icon } from './ui.jsx';
-import { fmtNum, rateDigits, isOpenNow, hoursLabel, directionsUrl, mapsUrl } from '../lib/pricing.js';
+import { fmtNum, rateDigits, ageLabel, isOpenNow, hoursLabel, directionsUrl, mapsUrl } from '../lib/pricing.js';
 
-function timeAgo(date) {
-  if (!date) return 'Sample snapshot';
-  const m = Math.round((Date.now() - date.getTime()) / 60000);
-  return m < 1 ? 'Updated just now' : `Updated ${m} min ago`;
+function estimateLabel(quotedAt, live) {
+  if (!live || !quotedAt) return 'Estimate · offline sample rates';
+  return `Estimate · market quote ${ageLabel(quotedAt)} old`;
 }
 
-export default function ProviderCard({ row, s, updatedAt, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
+export default function ProviderCard({ row, s, quotedAt, live, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
   const { provider: p, branch: b, branches, q, total } = row;
   const d = rateDigits(Math.max(q.sellRate, q.buyRate));
   const open = isOpenNow(b);
   const active = s.mode === 'sell' ? 'sell' : 'buy';
   const verb = s.mode === 'sell' ? 'You receive' : 'You pay';
-  const cur = s.mode === 'sell' ? s.to : s.to;
+  const cur = s.to;
+  // What the spread (plus any fee) costs versus converting at the mid-market rate.
+  const midTotal = s.amount * q.mid;
+  const spreadCost = Math.abs(midTotal - total);
+  const spreadPct = midTotal ? (spreadCost / midTotal) * 100 : 0;
 
   return (
     <article
@@ -74,14 +77,14 @@ export default function ProviderCard({ row, s, updatedAt, selected, onMap, onRev
         <div className="flex min-w-0 flex-col gap-2">
           <div className="board p-3">
             <div className="mb-2 flex items-center justify-between font-display text-[12px] font-semibold uppercase tracking-[.16em] text-steel-400">
-              <span>1 {s.from} =</span><span>{s.to}</span>
+              <span>Estimated · 1 {s.from} =</span><span>{s.to}</span>
             </div>
             <div className={`mb-2 flex items-center justify-between gap-2 rounded-md px-2 py-1.5 ${active === 'sell' ? 'bg-white/10 ring-1 ring-led/60' : ''}`}>
-              <span className="font-display text-sm font-bold uppercase tracking-wider text-steel-300">We buy</span>
+              <span className="font-display text-sm font-bold uppercase tracking-wider text-steel-300">Sell {s.from}</span>
               <FlipRate value={q.sellRate} digits={d} size="text-xl" />
             </div>
             <div className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 ${active === 'buy' ? 'bg-white/10 ring-1 ring-led/60' : ''}`}>
-              <span className="font-display text-sm font-bold uppercase tracking-wider text-steel-300">We sell</span>
+              <span className="font-display text-sm font-bold uppercase tracking-wider text-steel-300">Buy {s.from}</span>
               <FlipRate value={q.buyRate} digits={d} size="text-xl" />
             </div>
           </div>
@@ -93,12 +96,13 @@ export default function ProviderCard({ row, s, updatedAt, selected, onMap, onRev
             </div>
             <div className="mt-0.5 flex flex-wrap justify-between gap-x-2 text-xs text-steel-500">
               <span>{s.channel === 'bank' ? `Transfer fee ${s.from} ${fmtNum(q.feeBase)}` : 'Cash · no fee'}</span>
+              {spreadCost > 0.005 && <span>{fmtNum(spreadCost)} {s.to} ({spreadPct.toFixed(2)}%) {s.mode === 'sell' ? 'below' : 'above'} mid-market</span>}
               {savings > 0.005 && <span className="font-semibold text-go">{s.mode === 'sell' ? '+' : '−'}{fmtNum(savings)} {s.to} {s.mode === 'sell' ? 'vs. lowest' : 'vs. priciest'}</span>}
             </div>
           </div>
 
           <div className="flex items-center justify-between gap-2 text-xs text-steel-500">
-            <span>{timeAgo(updatedAt)}{!updatedAt && ' · indicative'}</span>
+            <span>{estimateLabel(quotedAt, live)}</span>
             <label className={`flex items-center gap-2 text-sm font-semibold text-ink ${compareDisabled && !compared ? 'opacity-50' : 'cursor-pointer'}`}>
               <input type="checkbox" className="peer sr-only" checked={compared} disabled={compareDisabled && !compared} onChange={() => onCompare(p.id)} />
               <span className="well flex h-6 w-6 items-center justify-center !rounded-md text-sky peer-checked:[&>svg]:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-sky-light">
