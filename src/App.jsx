@@ -23,7 +23,7 @@ export default function App() {
     const home = guessHomeCurrency(); // visitors start as "foreign cash -> AED"; UAE locales keep AED -> INR
     return {
     from: home ?? 'AED', to: home ? 'AED' : 'INR', amount: 5000, amountText: '5000', mode: 'sell', channel: 'cash', areaId: 'all',
-    minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate',
+    minRating: 0, openNow: false, query: '', emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate',
     };
   });
   const set = useCallback((patch) => setS((p) => {
@@ -95,11 +95,14 @@ export default function App() {
 
   // ---- derive rows -------------------------------------------------------
   const origin = userLoc ? [userLoc.lat, userLoc.lng] : area.center;
+  const tokens = useMemo(() => s.query.toLowerCase().split(/\s+/).filter(Boolean), [s.query]);
+  const resultsRef = useRef(null);
   const rows = useMemo(() => {
     const out = [];
     for (const p of data.providers) {
       if (p.rating < s.minRating) continue;
-      const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b)));
+      const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b))
+        && tokens.every((tk) => `${p.name} ${b.area} ${b.emirate} ${b.address}`.toLowerCase().includes(tk)));
       if (!branches.length) continue;
       const withDist = branches.map((b) => ({ b, d: km(origin, [b.lat, b.lng]) })).sort((x, y) => x.d - y.d);
       const branch = branches.find((b) => b.id === picked[p.id]) ?? withDist[0].b;
@@ -107,7 +110,7 @@ export default function App() {
       out.push({ provider: p, branches, branch, nearestKm: withDist[0].d, q, total: convert(q, s.amount, s.mode) });
     }
     return out;
-  }, [data, s, picked, area, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [data, s, picked, area, tokens, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const specificArea = !!userLoc || !['all', 'dubai', 'abudhabi'].includes(s.areaId);
   const sorted = useMemo(() => {
@@ -212,12 +215,31 @@ export default function App() {
         <strong className="text-ink">These are estimates, not counter rates.</strong> Each provider's figure is the market rate plus that provider's typical spread. Exchange houses don't publish live rates, so the final rate and fees are set at the counter.
       </div>
 
-      <div className="mt-3 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_minmax(0,440px)]">
+      <div className="mt-3 grid gap-4 lg:grid-cols-[168px_minmax(0,1fr)] xl:grid-cols-[168px_minmax(0,1fr)_minmax(0,390px)]">
         <div className="lg:sticky lg:top-4 lg:self-start">
           <Sidebar s={s} set={set} />
         </div>
 
         <main className="flex min-w-0 flex-col gap-3" aria-label="Results">
+          <form
+            role="search" aria-label="Search exchange houses" className="panel flex flex-wrap items-center gap-2 p-2.5"
+            onSubmit={(e) => { e.preventDefault(); resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+          >
+            <div className="well flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="shrink-0 text-steel-500" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="M13 13l4.5 4.5" /></svg>
+              <input
+                id="storeSearch" type="search" list="storeSuggest" autoComplete="off" value={s.query} onChange={(e) => set({ query: e.target.value })}
+                placeholder="Search stores, areas or addresses, e.g. LuLu, Deira, Marina Walk" aria-label="Search exchange houses, areas or addresses"
+                className="w-full min-w-0 bg-transparent text-base font-medium outline-none placeholder:text-steel-400"
+              />
+              {s.query && <button type="button" className="text-sm font-semibold text-sky hover:underline" onClick={() => set({ query: '' })} aria-label="Clear search">Clear</button>}
+              <datalist id="storeSuggest">
+                {data.providers.map((p) => <option key={p.id} value={p.name} />)}
+                {AREAS.slice(3).map((a) => <option key={a.id} value={a.label} />)}
+              </datalist>
+            </div>
+            <button type="submit" className="btn btn-primary h-[42px]">Search</button>
+          </form>
           <SortTabs sort={s.sort} set={set} summary={summary} />
           {userLoc && (
             <section className="panel border-l-4 border-go p-3" aria-label="Nearest branches to you">
@@ -242,13 +264,13 @@ export default function App() {
               <p className="mt-2 text-xs text-steel-500">Straight-line distance from your current position{userLoc.acc > 500 ? ` (location accurate to about ${Math.round(userLoc.acc)} m)` : ''}.</p>
             </section>
           )}
-          <p className="px-1 text-sm text-steel-600">
-            {sorted.length} provider{sorted.length === 1 ? '' : 's'} · {fmtNum(s.amount, 0)} {s.from} to {s.to} · {s.mode === 'sell' ? 'selling' : 'buying'} {s.from} · {s.channel === 'bank' ? 'bank transfer' : 'cash'}
+          <p ref={resultsRef} className="scroll-mt-4 px-1 text-sm text-steel-600">
+            {s.query.trim() && <>Results for <strong className="text-ink">"{s.query.trim()}"</strong> · </>}{sorted.length} provider{sorted.length === 1 ? '' : 's'} · {fmtNum(s.amount, 0)} {s.from} to {s.to} · {s.mode === 'sell' ? 'selling' : 'buying'} {s.from} · {s.channel === 'bank' ? 'bank transfer' : 'cash'}
           </p>
           {sorted.length === 0 && (
             <div className="panel p-8 text-center">
               <p className="font-display text-xl font-bold uppercase">No exchange houses match</p>
-              <p className="mt-1 text-sm text-steel-600">Loosen the rating, open-now or emirate filters to see more.</p>
+              <p className="mt-1 text-sm text-steel-600">Try a different search, or loosen the rating, open-now or emirate filters.</p>
             </div>
           )}
           {sorted.map((r) => (

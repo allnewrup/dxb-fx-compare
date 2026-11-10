@@ -1,16 +1,15 @@
 import React from 'react';
-import { Switch } from './ui.jsx';
 
 const RATINGS = [0, 4.0, 4.3, 4.5];
 
 export default function Sidebar({ s, set }) {
   return (
-    <aside aria-label="Filters" className="panel flex flex-col gap-5 p-4">
-      <h2 className="font-display text-xl font-bold uppercase tracking-wide">Filters</h2>
+    <aside aria-label="Filters" className="panel flex flex-col gap-5 p-3 lg:min-h-[calc(100vh-2rem)]">
+      <h2 className="font-display text-lg font-bold uppercase tracking-wide">Filters</h2>
 
       <fieldset>
         <legend className="label mb-2">Minimum Google rating</legend>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {RATINGS.map((r) => (
             <button key={r} type="button" className="key" aria-pressed={s.minRating === r} onClick={() => set({ minRating: r })}>
               {r === 0 ? 'Any' : `${r.toFixed(1)}+ ★`}
@@ -21,7 +20,10 @@ export default function Sidebar({ s, set }) {
 
       <div>
         <span className="label mb-2 block">Availability</span>
-        <Switch id="openNow" checked={s.openNow} onChange={(v) => set({ openNow: v })} off="Any time" on="Open now" />
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="openNow" className="text-sm font-semibold">Open now</label>
+          <button id="openNow" type="button" role="switch" aria-checked={s.openNow} onClick={() => set({ openNow: !s.openNow })} className="switch" />
+        </div>
         <p className="mt-1.5 text-xs text-steel-500">Uses UAE time (GST).</p>
       </div>
 
@@ -45,12 +47,12 @@ export default function Sidebar({ s, set }) {
         <label htmlFor="sortSel" className="label mb-2 block">Sort by</label>
         <select id="sortSel" className="field" value={s.sort} onChange={(e) => set({ sort: e.target.value })}>
           <option value="rate">Best rate</option>
-          <option value="rating">Highest rated</option>
-          <option value="near">Closest / most branches</option>
+          <option value="rating">Top rated</option>
+          <option value="near">Closest</option>
         </select>
       </div>
 
-      <button type="button" className="btn btn-sm" onClick={() => set({ minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate', areaId: 'all' })}>
+      <button type="button" className="btn btn-sm mt-auto" onClick={() => set({ query: '', minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate', areaId: 'all' })}>
         Reset filters
       </button>
     </aside>

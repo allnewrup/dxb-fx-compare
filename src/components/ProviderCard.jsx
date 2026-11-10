@@ -24,7 +24,7 @@ export default function ProviderCard({ row, s, quotedAt, live, distKm, selected,
       className={`panel relative overflow-hidden transition-shadow ${selected ? 'ring-2 ring-sky-light' : ''}`}
       aria-label={p.name}
     >
-      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(250px,290px)] md:p-5">
+      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] md:p-5">
         {/* Identity + branch */}
         <div className="flex min-w-0 flex-col gap-3">
           {badges.length > 0 && (
