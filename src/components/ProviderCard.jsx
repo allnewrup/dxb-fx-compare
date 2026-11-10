@@ -38,9 +38,14 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
             <div className="min-w-0">
               <h3 className="font-display text-[22px] font-bold leading-tight tracking-wide">{p.name}</h3>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <Stars value={p.rating} />
-                <span className="font-semibold">{p.rating.toFixed(1)} ★</span>
-                <span className="text-steel-500">({p.reviewCount.toLocaleString('en-AE')} Google reviews)</span>
+                {p.rating != null ? (
+                  <>
+                    <Stars value={p.rating} />
+                    <span className="font-semibold">{p.rating.toFixed(1)} ★</span>
+                    <span className="text-steel-500">({p.reviewCount.toLocaleString('en-AE')} Google reviews)</span>
+                  </>
+                ) : <span className="text-steel-500">No Google rating loaded</span>}
+                <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold shadow-well ${p.type === 'bank' ? 'bg-sky text-white' : 'bg-steel-200 text-steel-600'}`}>{p.type === 'bank' ? 'Bank' : 'Exchange house'}</span>
               </div>
             </div>
           </div>
@@ -48,21 +53,26 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
           <div className="well flex flex-col gap-2 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <Icon.pin className="text-sky" />
-              <span className="font-semibold">{b.area}, {b.emirate}</span>
-              <Pill tone={open ? 'go' : 'off'}>{open ? 'Open now' : 'Closed'}</Pill>
+              <span className="font-semibold">{b.area === b.emirate ? b.emirate : `${b.area}, ${b.emirate}`}</span>
+              <Pill tone={open ? 'go' : 'off'}>{open === null ? 'Hours not listed' : open ? 'Open now' : 'Closed'}</Pill>
               {distKm != null && <span className="rounded-full bg-sky px-2 py-0.5 text-xs font-semibold text-white">{distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`} from you</span>}
             </div>
-            <p className="text-sm text-steel-600">{b.address} · {hoursLabel(b)}</p>
+            <p className="text-sm text-steel-600">{[b.address, b.hours ? hoursLabel(b) : null].filter(Boolean).join(' · ') || 'Address not listed'}</p>
             {branches.length > 1 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-steel-500">{branches.length} branches</span>
-                {branches.slice(0, 6).map((br) => (
-                  <button
-                    key={br.id} type="button" onClick={() => onPickBranch(p.id, br.id)}
-                    className={`rounded-md px-2 py-0.5 text-xs font-semibold shadow-well ${br.id === b.id ? 'bg-sky text-white' : 'bg-steel-200 text-steel-600 hover:bg-steel-300'}`}
-                    aria-pressed={br.id === b.id}
-                  >{br.area}</button>
-                ))}
+                {branches.slice(0, 6).map((br, i) => {
+                  const same = branches.filter((x) => x.area === br.area);
+                  const label = same.length > 1 ? `${br.area} ${same.indexOf(br) + 1}` : br.area;
+                  return (
+                    <button
+                      key={br.id} type="button" onClick={() => onPickBranch(p.id, br.id)}
+                      className={`rounded-md px-2 py-0.5 text-xs font-semibold shadow-well ${br.id === b.id ? 'bg-sky text-white' : 'bg-steel-200 text-steel-600 hover:bg-steel-300'}`}
+                      aria-pressed={br.id === b.id}
+                    >{label}</button>
+                  );
+                })}
+                {branches.length > 6 && <span className="text-xs text-steel-500">+{branches.length - 6} more on the map</span>}
               </div>
             )}
           </div>
@@ -103,6 +113,11 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
             </div>
           </div>
 
+          {p.spreadBasis === 'category' && (
+            <p className="text-xs text-steel-500">
+              {p.type === 'bank' ? 'Bank' : 'Exchange house'} category-average spread ({row.q.marginPct.toFixed(2)}%). No provider-specific rate is available, so providers in this category show the same figure.
+            </p>
+          )}
           <div className="flex items-center justify-between gap-2 text-xs text-steel-500">
             <span>{estimateLabel(quotedAt, live, daily)}</span>
             <label className={`flex items-center gap-2 text-sm font-semibold text-ink ${compareDisabled && !compared ? 'opacity-50' : 'cursor-pointer'}`}>

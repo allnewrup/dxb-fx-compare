@@ -2,7 +2,7 @@
 
 **Compare money exchange rates across Dubai and Abu Dhabi, side by side.**
 
-Dirham Desk is a React single-page app that lines up exchange houses (Al Ansari, Al Fardan, LuLu, Joyalukkas, Al Rostamani, Sharaf, Wall Street, Al Dahab) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and a reviews drawer. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
+Dirham Desk is a React single-page app that lines up UAE exchange houses and banks (127 providers and about 890 branches across all seven emirates, including Al Ansari, Al Fardan, LuLu, UAE Exchange, Orient, Travelex, Emirates NBD and FAB) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and a reviews drawer. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
 
 ![Dirham Desk screenshot](docs/screenshot.png)
 
@@ -284,6 +284,15 @@ For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo
 - Unit tests for `pricing.js` and component tests for the cards
 
 ---
+
+## Where the exchange houses and banks come from
+
+The provider list is built from **OpenStreetMap** (© OpenStreetMap contributors, ODbL): every tagged `amenity=bureau_de_change` and `amenity=bank` in the UAE, grouped by brand. That gives real names and real coordinates, with opening hours where mappers added them. Refresh it with `node scripts/build-osm-data.mjs` (it writes `src/data/osm-uae.json` and resumes if interrupted).
+
+- Exchange houses: every named brand is included (95). Unnamed bureaus are skipped.
+- Banks: only brands with 3 or more branches (32), and OpenStreetMap does not say whether a given branch exchanges currency, so confirm before you go.
+- The first eight exchange houses keep their hand-written spread profiles, sample ratings and sample reviews. Every other provider has **no rating or reviews** (none are invented) and uses one **category-average spread**, so their rates are identical until real rates are available.
+- OpenStreetMap coverage is incomplete and can be out of date, and branch emirates are taken from the official boundaries (Abu Dhabi is "everything else").
 
 ## Disclaimer
 

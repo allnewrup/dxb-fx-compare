@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { AREAS } from './data/seed.js';
+import { AREAS, EMIRATES } from './data/seed.js';
 import { getSnapshot, refreshLiveRates, enrichFromGoogle } from './services/fxDataService.js';
 import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates, directionsUrl } from './lib/pricing.js';
 import SearchConsole from './components/SearchConsole.jsx';
@@ -23,7 +23,7 @@ export default function App() {
     const home = guessHomeCurrency(); // visitors start as "foreign cash -> AED"; UAE locales keep AED -> INR
     return {
     from: home ?? 'AED', to: home ? 'AED' : 'INR', amount: 5000, amountText: '5000', mode: 'sell', channel: 'cash', areaId: 'all',
-    minRating: 0, openNow: false, query: '', emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate',
+    minRating: 0, openNow: false, query: '', emirates: Object.fromEntries(EMIRATES.map((e) => [e, true])), type: 'all', sort: 'rate',
     };
   });
   const set = useCallback((patch) => setS((p) => {
@@ -83,7 +83,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const area = AREAS.find((a) => a.id === s.areaId);
+  const area = AREAS.find((a) => a.id === s.areaId) ?? AREAS[0];
 
   // Timestamp of the market quote behind THIS pair (oldest of the two currencies, since both feed the cross rate).
   const pairQuotedAt = useMemo(() => {
@@ -110,17 +110,22 @@ export default function App() {
   const origin = userLoc ? [userLoc.lat, userLoc.lng] : area.center;
   const tokens = useMemo(() => s.query.toLowerCase().split(/\s+/).filter(Boolean), [s.query]);
   const resultsRef = useRef(null);
+  const PAGE = 12;
+  const [shown, setShown] = useState(PAGE);
+  const filterSig = JSON.stringify([s.query, s.sort, s.type, s.minRating, s.openNow, s.areaId, s.emirates, s.from, s.to, s.mode, s.channel]);
+  useEffect(() => { setShown(PAGE); }, [filterSig]);
   const rows = useMemo(() => {
     const out = [];
     for (const p of data.providers) {
-      if (p.rating < s.minRating) continue;
-      const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b))
-        && tokens.every((tk) => `${p.name} ${b.area} ${b.emirate} ${b.address}`.toLowerCase().includes(tk)));
+      if (s.type !== 'all' && p.type !== s.type) continue;
+      if ((p.rating ?? 0) < s.minRating) continue;
+      const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b) === true)
+        && tokens.every((tk) => `${p.name} ${p.type === 'bank' ? 'bank' : 'exchange bureau'} ${b.area} ${b.emirate} ${b.address}`.toLowerCase().includes(tk)));
       if (!branches.length) continue;
       const withDist = branches.map((b) => ({ b, d: km(origin, [b.lat, b.lng]) })).sort((x, y) => x.d - y.d);
       const branch = branches.find((b) => b.id === picked[p.id]) ?? withDist[0].b;
       const q = quote(p, data.mid, s.from, s.to, s.channel);
-      out.push({ provider: p, branches, branch, nearestKm: withDist[0].d, q, total: convert(q, s.amount, s.mode) });
+      out.push({ provider: p, branches: withDist.map((x) => x.b), branch, nearestKm: withDist[0].d, q, total: convert(q, s.amount, s.mode) });
     }
     return out;
   }, [data, s, picked, area, tokens, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -131,8 +136,8 @@ export default function App() {
     if (s.sort === 'high') r.sort((a, b) => b.total - a.total);
     else if (s.sort === 'low') r.sort((a, b) => a.total - b.total);
     else if (s.sort === 'rate') r.sort((a, b) => (s.mode === 'sell' ? b.total - a.total : a.total - b.total));
-    else if (s.sort === 'rating') r.sort((a, b) => b.provider.rating - a.provider.rating || b.provider.reviewCount - a.provider.reviewCount);
-    else r.sort((a, b) => (specificArea ? a.nearestKm - b.nearestKm : b.branches.length - a.branches.length) || b.provider.rating - a.provider.rating);
+    else if (s.sort === 'rating') r.sort((a, b) => (b.provider.rating ?? -1) - (a.provider.rating ?? -1) || (b.provider.reviewCount ?? 0) - (a.provider.reviewCount ?? 0));
+    else r.sort((a, b) => (specificArea ? a.nearestKm - b.nearestKm : b.branches.length - a.branches.length) || (b.provider.rating ?? -1) - (a.provider.rating ?? -1));
     return r;
   }, [rows, s.sort, s.mode, specificArea]);
 
@@ -140,7 +145,8 @@ export default function App() {
     if (!rows.length) return null;
     const totals = rows.map((r) => r.total);
     const bestRate = rows.reduce((a, b) => ((s.mode === 'sell' ? b.total > a.total : b.total < a.total) ? b : a));
-    const topRated = rows.reduce((a, b) => (b.provider.rating > a.provider.rating ? b : a));
+    const rated = rows.filter((r) => r.provider.rating != null);
+    const topRated = rated.length ? rated.reduce((a, b) => (b.provider.rating > a.provider.rating ? b : a)) : null;
     const mostBr = rows.reduce((a, b) => (b.branches.length > a.branches.length ? b : a));
     const closest = rows.reduce((a, b) => (b.nearestKm < a.nearestKm ? b : a));
     return { min: Math.min(...totals), max: Math.max(...totals), bestRate, topRated, mostBr, closest };
@@ -148,7 +154,7 @@ export default function App() {
 
   const summary = stats ? {
     rate: { value: `${fmtNum(stats.bestRate.total)} ${s.to}`, sub: stats.bestRate.provider.name },
-    rating: { value: `${stats.topRated.provider.rating.toFixed(1)} ★ on Google`, sub: stats.topRated.provider.name },
+    rating: stats.topRated ? { value: `${stats.topRated.provider.rating.toFixed(1)} ★ on Google`, sub: stats.topRated.provider.name } : { value: 'No ratings loaded', sub: '' },
     near: specificArea
       ? { value: `${stats.closest.nearestKm.toFixed(1)} km from ${userLoc ? 'you' : area.label}`, sub: stats.closest.provider.name }
       : { value: `${stats.mostBr.branches.length} branches`, sub: stats.mostBr.provider.name },
@@ -178,7 +184,7 @@ export default function App() {
     if (!stats) return [];
     const b = [];
     if (r === stats.bestRate) b.push(BADGE.rate);
-    if (r === stats.topRated) b.push(BADGE.rating);
+    if (stats.topRated && r === stats.topRated) b.push(BADGE.rating);
     if (r === stats.mostBr && r.branches.length > 1) b.push(BADGE.branches);
     return b;
   };
@@ -193,7 +199,7 @@ export default function App() {
           <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl">AED</span>
           <div>
             <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-wide">Dirham Desk</h1>
-            <p className="text-sm text-steel-600">Compare money exchange rates across Dubai &amp; Abu Dhabi</p>
+            <p className="text-sm text-steel-600">Compare money exchange rates across UAE exchange houses &amp; banks</p>
           </div>
         </div>
         <QrBadge onOpen={() => setQrOpen(true)} />
@@ -250,7 +256,7 @@ export default function App() {
               {s.query && <button type="button" className="text-sm font-semibold text-sky hover:underline" onClick={() => set({ query: '' })} aria-label="Clear search">Clear</button>}
               <datalist id="storeSuggest">
                 {data.providers.map((p) => <option key={p.id} value={p.name} />)}
-                {AREAS.slice(3).map((a) => <option key={a.id} value={a.label} />)}
+                {AREAS.filter((a) => a.kind === 'area').map((a) => <option key={a.id} value={a.label} />)}
               </datalist>
             </div>
             <button type="submit" className="btn btn-primary h-[42px]">Search</button>
@@ -295,7 +301,7 @@ export default function App() {
               <p className="mt-1 text-sm text-steel-600">Try a different search, or loosen the rating, open-now or emirate filters.</p>
             </div>
           )}
-          {sorted.map((r) => (
+          {sorted.slice(0, shown).map((r) => (
             <ProviderCard
               key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost} daily={pairDaily} distKm={userLoc ? km(origin, [r.branch.lat, r.branch.lng]) : null}
               selected={sel?.pid === r.provider.id}
@@ -306,6 +312,11 @@ export default function App() {
               onPickBranch={(pid, bid) => { setPicked((x) => ({ ...x, [pid]: bid })); setSel({ pid, bid }); }}
             />
           ))}
+          {sorted.length > shown && (
+            <button type="button" className="btn self-center" onClick={() => setShown((n) => n + PAGE)}>
+              Show {Math.min(PAGE, sorted.length - shown)} more <span className="text-steel-500">({sorted.length - shown} remaining)</span>
+            </button>
+          )}
           {compare.length === 1 && <p className="text-center text-sm text-steel-600">Select at least one more provider to open the side-by-side tray (up to 4).</p>}
         </main>
 
@@ -334,7 +345,7 @@ export default function App() {
 
       <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
         <p><strong className="text-ink">About Dirham Desk.</strong> Dirham Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
-        <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, and ratings, review counts, pins and reviews are a pre-loaded sample. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
+        <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are a pre-loaded sample for the first eight exchange houses only, and are not loaded for the rest. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
       </footer>
 
       {compareRows.length >= 2 && <CompareTray rows={compareRows} s={s} onRemove={toggleCompare} onClear={() => setCompare([])} />}

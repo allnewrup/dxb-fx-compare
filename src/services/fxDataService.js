@@ -13,7 +13,8 @@
  * Provider boards are not publicly machine-readable, so provider rates are modelled
  * (mid ± spread) and labelled as such in the UI.
  */
-import { PROVIDERS, SEED_MID_PER_AED, CURRENCIES } from '../data/seed.js';
+import { SEED_MID_PER_AED, CURRENCIES } from '../data/seed.js';
+import { PROVIDERS } from '../data/providers.js';
 
 const RATE_ENDPOINTS = [
   'https://open.er-api.com/v6/latest/AED',

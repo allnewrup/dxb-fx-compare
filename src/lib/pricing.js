@@ -1,4 +1,4 @@
-import { AREAS } from '../data/seed.js';
+import { AREAS, EMIRATES } from '../data/seed.js';
 
 /** Cross rate: units of `to` per 1 `from`, derived from a per-AED mid-market table. */
 export const midRate = (mid, from, to) => mid[to] / mid[from];
@@ -30,24 +30,26 @@ export const fmtNum = (v, d = 2) =>
 
 export const rateDigits = (r) => (r >= 100 ? 2 : r >= 10 ? 3 : r >= 0.1 ? 4 : r >= 0.01 ? 5 : 6);
 
+/** true / false, or null when the branch's opening hours aren't known. Handles overnight ranges (e.g. 18:00-02:00). */
 export function isOpenNow(branch, now = new Date()) {
+  if (!branch.hours) return null;
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
   const h = +parts.find((p) => p.type === 'hour').value % 24;
   const mi = +parts.find((p) => p.type === 'minute').value;
   const cur = h * 60 + mi;
   const [fh, fm] = branch.hours[0].split(':').map(Number);
   const [th, tm] = branch.hours[1].split(':').map(Number);
-  return cur >= fh * 60 + fm && cur < th * 60 + tm;
+  const from = fh * 60 + fm, to = th * 60 + tm;
+  return to > from ? cur >= from && cur < to : cur >= from || cur < to;
 }
 
-export const hoursLabel = (b) => (b.hours[0] === '00:00' && b.hours[1] === '24:00' ? 'Open 24 hours' : `${b.hours[0]} – ${b.hours[1]}`);
+export const hoursLabel = (b) => (!b.hours ? 'Hours not listed' : b.hours[0] === '00:00' && b.hours[1] === '24:00' ? 'Open 24 hours' : `${b.hours[0]} – ${b.hours[1]}`);
 
 export function areaMatches(branch, areaId) {
   const a = AREAS.find((x) => x.id === areaId);
-  if (!a || areaId === 'all') return true;
-  if (areaId === 'dubai') return branch.emirate === 'Dubai';
-  if (areaId === 'abudhabi') return branch.emirate === 'Abu Dhabi';
-  return branch.area === areaId;
+  if (!a || a.kind === 'all') return true;
+  if (a.kind === 'emirate') return branch.emirate === a.emirate;
+  return branch.area === areaId; // neighbourhood
 }
 
 /** Haversine distance in km. */
@@ -73,17 +75,18 @@ export function relTime(daysAgo) {
 /** Emirates implied by the area dropdown, so the top bar and the sidebar never disagree. */
 export function emiratesForArea(areaId) {
   const a = AREAS.find((x) => x.id === areaId);
-  if (!a || !a.emirate) return { Dubai: true, 'Abu Dhabi': true };
-  return { Dubai: a.emirate === 'Dubai', 'Abu Dhabi': a.emirate === 'Abu Dhabi' };
+  return Object.fromEntries(EMIRATES.map((e) => [e, !a?.emirate || a.emirate === e]));
 }
 
-/** Area dropdown value implied by ticking emirates in the sidebar (keeps a neighbourhood if it still fits). */
+/** Area dropdown value implied by ticking emirates in the sidebar. 'multi' means a custom subset. */
 export function areaForEmirates(em, currentAreaId) {
-  const cur = AREAS.find((x) => x.id === currentAreaId);
-  if (em.Dubai && em['Abu Dhabi']) return 'all';
-  if (em.Dubai) return cur?.emirate === 'Dubai' ? currentAreaId : 'dubai';
-  if (em['Abu Dhabi']) return cur?.emirate === 'Abu Dhabi' ? currentAreaId : 'abudhabi';
-  return currentAreaId;
+  const on = EMIRATES.filter((e) => em[e]);
+  if (on.length === EMIRATES.length) return 'all';
+  if (on.length === 1) {
+    const cur = AREAS.find((x) => x.id === currentAreaId);
+    return cur?.emirate === on[0] ? currentAreaId : AREAS.find((x) => x.kind === 'emirate' && x.emirate === on[0]).id;
+  }
+  return on.length ? 'multi' : currentAreaId;
 }
 
 /** "3 min", "2 h 10 min", "1 d" for a timestamp's age. */

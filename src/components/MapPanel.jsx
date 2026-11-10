@@ -125,7 +125,7 @@ export default function MapPanel({ pins, selectedId, onSelect, bestId, selected,
             <strong className="font-display text-lg tracking-wide">{selected.p.name}</strong>
             <span className="font-mono text-sm font-semibold">{fmtNum(selected.rate, selected.digits)}</span>
           </div>
-          <p className="text-sm text-steel-600">{selected.b.area}, {selected.b.emirate} · {selected.b.address}</p>
+          <p className="text-sm text-steel-600">{selected.b.area === selected.b.emirate ? selected.b.emirate : `${selected.b.area}, ${selected.b.emirate}`}{selected.b.address ? ` · ${selected.b.address}` : ''}</p>
           <a className="btn btn-primary btn-sm mt-1 self-start" href={directionsUrl(selected.b, selected.p)} target="_blank" rel="noreferrer">Get directions ↗</a>
         </div>
       )}

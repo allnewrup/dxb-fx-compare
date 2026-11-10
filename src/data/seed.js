@@ -19,16 +19,24 @@ export const SEED_MID_PER_AED = {
   AED: 1, USD: 0.27227, EUR: 0.24433, GBP: 0.20386, INR: 25.57, PHP: 17.16, PKR: 75.30, SAR: 1.0219,
 };
 
+export const EMIRATES = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
+
+// kind: 'all' | 'emirate' | 'area' (neighbourhood). Neighbourhood centres also assign each branch its area label.
 export const AREAS = [
-  { id: 'all', label: 'All UAE', emirate: null, center: [24.9, 54.9] },
-  { id: 'dubai', label: 'Dubai only', emirate: 'Dubai', center: [25.2, 55.27] },
-  { id: 'abudhabi', label: 'Abu Dhabi only', emirate: 'Abu Dhabi', center: [24.45, 54.4] },
-  { id: 'Deira', label: 'Deira', emirate: 'Dubai', center: [25.2713, 55.304] },
-  { id: 'Bur Dubai', label: 'Bur Dubai', emirate: 'Dubai', center: [25.2535, 55.297] },
-  { id: 'Marina', label: 'Marina', emirate: 'Dubai', center: [25.0773, 55.1389] },
-  { id: 'Downtown', label: 'Downtown', emirate: 'Dubai', center: [25.1985, 55.2796] },
-  { id: 'Corniche', label: 'Corniche', emirate: 'Abu Dhabi', center: [24.48, 54.35] },
-  { id: 'Mussafah', label: 'Mussafah', emirate: 'Abu Dhabi', center: [24.347, 54.5] },
+  { id: 'all', label: 'All UAE', emirate: null, kind: 'all', center: [24.9, 54.9] },
+  { id: 'dubai', label: 'Dubai only', emirate: 'Dubai', kind: 'emirate', center: [25.2, 55.27] },
+  { id: 'abudhabi', label: 'Abu Dhabi only', emirate: 'Abu Dhabi', kind: 'emirate', center: [24.45, 54.4] },
+  { id: 'sharjah', label: 'Sharjah only', emirate: 'Sharjah', kind: 'emirate', center: [25.34, 55.41] },
+  { id: 'ajman', label: 'Ajman only', emirate: 'Ajman', kind: 'emirate', center: [25.41, 55.44] },
+  { id: 'rak', label: 'Ras Al Khaimah only', emirate: 'Ras Al Khaimah', kind: 'emirate', center: [25.79, 55.94] },
+  { id: 'fujairah', label: 'Fujairah only', emirate: 'Fujairah', kind: 'emirate', center: [25.12, 56.33] },
+  { id: 'uaq', label: 'Umm Al Quwain only', emirate: 'Umm Al Quwain', kind: 'emirate', center: [25.56, 55.55] },
+  { id: 'Deira', label: 'Deira', emirate: 'Dubai', kind: 'area', center: [25.2713, 55.304] },
+  { id: 'Bur Dubai', label: 'Bur Dubai', emirate: 'Dubai', kind: 'area', center: [25.2535, 55.297] },
+  { id: 'Marina', label: 'Marina', emirate: 'Dubai', kind: 'area', center: [25.0773, 55.1389] },
+  { id: 'Downtown', label: 'Downtown', emirate: 'Dubai', kind: 'area', center: [25.1985, 55.2796] },
+  { id: 'Corniche', label: 'Corniche', emirate: 'Abu Dhabi', kind: 'area', center: [24.48, 54.35] },
+  { id: 'Mussafah', label: 'Mussafah', emirate: 'Abu Dhabi', kind: 'area', center: [24.347, 54.5] },
 ];
 
 const PLACE = {

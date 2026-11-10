@@ -9,7 +9,7 @@ export default function ReviewsDrawer({ provider: p, onClose }) {
   );
   const branches = [...new Set(p.reviews.map((r) => r.branch))];
   const list = p.reviews.filter((r) => branchFilter === 'all' || r.branch === branchFilter);
-  const sample = !p.reviews.some((r) => r.verified);
+  const sample = p.reviews.length > 0 && !p.reviews.some((r) => r.verified);
   return (
     <div className="panel flex flex-col gap-3 p-4" aria-label={`Google reviews for ${p.name}`}>
       <div className="flex items-start gap-3">
@@ -17,9 +17,13 @@ export default function ReviewsDrawer({ provider: p, onClose }) {
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-xl font-bold leading-tight tracking-wide">{p.name}</h2>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-mono text-lg font-semibold">{p.rating.toFixed(1)}</span>
-            <Stars value={p.rating} size={16} />
-            <span className="text-steel-500">{p.reviewCount.toLocaleString('en-AE')} reviews</span>
+            {p.rating != null ? (
+              <>
+                <span className="font-mono text-lg font-semibold">{p.rating.toFixed(1)}</span>
+                <Stars value={p.rating} size={16} />
+                <span className="text-steel-500">{p.reviewCount.toLocaleString('en-AE')} reviews</span>
+              </>
+            ) : <span className="text-steel-500">No Google rating or reviews loaded</span>}
           </div>
         </div>
         <button type="button" className="btn btn-sm" onClick={onClose}>Back to map</button>
@@ -36,6 +40,7 @@ export default function ReviewsDrawer({ provider: p, onClose }) {
         {branches.map((b) => <button key={b} type="button" className="key" aria-pressed={branchFilter === b} onClick={() => setBranchFilter(b)}>{b}</button>)}
       </div>
 
+      {p.reviews.length === 0 && <p className="well p-3 text-sm text-steel-600">We don't have reviews for this provider yet. Use the button below to read them on Google Maps.</p>}
       <ul className="flex max-h-[420px] flex-col gap-3 overflow-y-auto pr-1">
         {list.map((r, i) => (
           <li key={i} className="well p-3">

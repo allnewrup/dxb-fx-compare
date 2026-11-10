@@ -1,11 +1,21 @@
 import React from 'react';
+import { EMIRATES } from '../data/seed.js';
 
 const RATINGS = [0, 4.0, 4.3, 4.5];
 
 export default function Sidebar({ s, set }) {
   return (
-    <aside aria-label="Filters" className="panel flex flex-col gap-5 p-3 lg:min-h-[calc(100vh-2rem)]">
+    <aside aria-label="Filters" className="panel flex flex-col gap-5 p-3 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
       <h2 className="font-display text-lg font-bold uppercase tracking-wide">Filters</h2>
+
+      <fieldset>
+        <legend className="label mb-2">Type</legend>
+        <div className="grid grid-cols-1 gap-2">
+          {[['all', 'All'], ['exchange', 'Exchange houses'], ['bank', 'Banks']].map(([v, l]) => (
+            <button key={v} type="button" className="key" aria-pressed={s.type === v} onClick={() => set({ type: v })}>{l}</button>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset>
         <legend className="label mb-2">Minimum Google rating</legend>
@@ -29,7 +39,7 @@ export default function Sidebar({ s, set }) {
 
       <fieldset>
         <legend className="label mb-2">Emirate</legend>
-        {['Dubai', 'Abu Dhabi'].map((em) => (
+        {EMIRATES.map((em) => (
           <label key={em} className="mb-2 flex cursor-pointer items-center gap-3 text-sm font-semibold">
             <input
               type="checkbox" className="peer sr-only" checked={s.emirates[em]}
@@ -54,7 +64,7 @@ export default function Sidebar({ s, set }) {
         </select>
       </div>
 
-      <button type="button" className="btn btn-sm mt-auto" onClick={() => set({ query: '', minRating: 0, openNow: false, emirates: { Dubai: true, 'Abu Dhabi': true }, sort: 'rate', areaId: 'all' })}>
+      <button type="button" className="btn btn-sm mt-auto" onClick={() => set({ query: '', minRating: 0, openNow: false, emirates: Object.fromEntries(EMIRATES.map((e) => [e, true])), type: 'all', sort: 'rate', areaId: 'all' })}>
         Reset filters
       </button>
     </aside>

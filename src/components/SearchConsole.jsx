@@ -72,13 +72,11 @@ export default function SearchConsole({ s, set, onRefresh, refreshing, codes }) 
           <span className="label">Emirate / area</span>
           <select id="area" className="field mt-1" value={s.areaId} onChange={(e) => set({ areaId: e.target.value })}>
             <optgroup label="Emirate">
-              {AREAS.slice(0, 3).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              {AREAS.filter((a) => a.kind === 'all' || a.kind === 'emirate').map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </optgroup>
-            <optgroup label="Dubai neighbourhoods">
-              {AREAS.slice(3, 7).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </optgroup>
-            <optgroup label="Abu Dhabi neighbourhoods">
-              {AREAS.slice(7).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+            {s.areaId === 'multi' && <option value="multi">Selected emirates</option>}
+            <optgroup label="Neighbourhoods">
+              {AREAS.filter((a) => a.kind === 'area').map((a) => <option key={a.id} value={a.id}>{a.label} ({a.emirate})</option>)}
             </optgroup>
           </select>
         </label>
