@@ -37,7 +37,6 @@ export default function App() {
   const [picked, setPicked] = useState({});
   const [sel, setSel] = useState(null); // {pid, bid}
   const [panel, setPanel] = useState('map');
-  const [mapMode, setMapMode] = useState('rates');
   const [reviewPid, setReviewPid] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,7 +227,7 @@ export default function App() {
             <button role="tab" type="button" className="key" aria-selected={panel === 'reviews'} onClick={() => setPanel('reviews')}>Google reviews</button>
           </div>
           {panel === 'map' ? (
-            <MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} areaId={s.areaId} mode={mapMode} onMode={setMapMode} bestId={stats?.bestRate.provider.id} />
+            <MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} />
           ) : (
             <ReviewsDrawer provider={data.providers.find((p) => p.id === reviewPid)} onClose={() => setPanel('map')} />
           )}

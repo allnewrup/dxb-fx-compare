@@ -96,3 +96,27 @@
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Leaflet rate tags: the pointer tip is the exact branch coordinate. */
+.rate-tag-icon { background: none; border: 0; }
+.rate-tag {
+  position: relative; display: flex; align-items: center; width: 84px; height: 26px; border-radius: 7px;
+  background: #fbfcfd; border: 1px solid #8d97a3; box-shadow: 0 2px 4px rgba(20,30,40,.35);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12.5px; font-weight: 600; color: #1b232b; cursor: pointer;
+}
+.rate-tag::after {
+  content: ''; position: absolute; left: 50%; bottom: -6px; width: 10px; height: 10px; transform: translateX(-50%) rotate(45deg);
+  background: #fbfcfd; border-right: 1px solid #8d97a3; border-bottom: 1px solid #8d97a3; border-radius: 0 0 2px 0;
+}
+.rate-tag .mk { display: flex; align-items: center; justify-content: center; width: 26px; height: 100%; border-radius: 6px 0 0 6px; color: #fff; font: 700 12px 'Barlow Condensed', sans-serif; }
+.rate-tag .rt { flex: 1; text-align: center; }
+.rate-tag.best { border-color: #cfa539; border-width: 2px; }
+.rate-tag.best::after { border-color: #cfa539; border-width: 2px; }
+.rate-tag.sel { border-color: #0b5fd8; border-width: 2.5px; }
+.rate-tag.sel::after { border-color: #0b5fd8; border-width: 2.5px; }
+.rate-cluster {
+  display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%;
+  background: #0b5fd8; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(20,30,40,.45);
+  font: 700 15px 'Barlow Condensed', sans-serif; cursor: pointer;
+}
+.leaflet-container { font-family: inherit; }
