@@ -84,9 +84,8 @@ Be clear about this before relying on any number.
 
 | Data | Source | Status |
 | --- | --- | --- |
-| **Market (mid) FX rate** | Yahoo Finance spot quotes for `USD/<currency>`, crossed through `USD/AED` | **Live.** Refreshed on load and every 60 s. The real quote timestamp is shown. |
-| Fallback market rate | `open.er-api.com`, then `api.exchangerate-api.com` | Daily fix, used only if the live source fails. The UI labels it "daily fix". |
-| **Provider rates** (We buy / We sell) | Market rate plus a modelled per-provider spread | **Estimated.** Exchange houses do not publish their boards in a machine-readable form. |
+| **Market (mid) FX rate** | Four independent feeds, cross-checked: Yahoo Finance FX spot (minute-level, major currencies), ECB via Frankfurter (daily, ~30 currencies), `open.er-api.com` (daily, ~160) and fawazahmed0 currency-api (daily, 300+) | **Live where possible.** For each currency a quote is discarded unless another source corroborates it (within 0.25% plus an allowance for market movement between quote times), then the freshest surviving quote wins. The UI shows the source, the quote age and how many sources agreed. Daily-only currencies are labelled "daily reference rate". |
+| **Provider rates** (Sell / Buy) | Market rate plus a modelled per-provider spread | **Estimated.** None of the exchange houses offers a public rates API, and their sites load rates through private services, so genuine counter rates can't be collected legitimately. |
 | Provider ratings and review counts | `src/data/seed.js` | **Sample snapshot**, replaceable with Google Places data. |
 | Reviews | `src/data/seed.js` | **Sample text written for this project**, not copied from Google. Labelled as such in the UI. |
 | Branch coordinates | `src/data/seed.js` | **Approximate** positions per neighbourhood. |
@@ -171,7 +170,7 @@ dxb-fx-compare/
 
 ```js
 getSnapshot()          // offline-safe seed: providers, branches, reviews, mid rates
-refreshLiveRates()     // → { mid, updatedAt, quotedAt, host }  Yahoo spot, then daily-fix fallback
+refreshLiveRates()     // → { mid, quoteTimes, sourceInfo, dailyCodes, updatedAt, host }  four feeds, cross-checked
 enrichFromGoogle(list) // → { providers, enriched }  no-op until VITE_PLACES_PROXY is set
 ```
 
@@ -244,7 +243,7 @@ For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo
 
 **Add a provider.** Append an object to `PROVIDERS` in `src/data/seed.js` with `id`, `name`, `mark` (two letters), `hue`, `rating`, `reviewCount`, `margin`, `fee`, `bias`, `branches` and `reviews`. Use the `branch()` helper for branches.
 
-**Add a currency.** Add it to `CURRENCIES` and `SEED_MID_PER_AED` in `seed.js`. Yahoo must offer a `USD<code>=X` symbol for it to load live.
+**Add a currency.** Every currency the daily feeds carry (about 160) appears automatically. To give one a minute-level live quote, add it to `CURRENCIES` and `SEED_MID_PER_AED` in `seed.js`; Yahoo must offer a `USD<code>=X` symbol for it.
 
 **Add an area.** Add an entry to `AREAS` (with a centre point) and to `PLACE` in `seed.js`, then use the area name on branches.
 

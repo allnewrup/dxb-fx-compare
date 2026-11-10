@@ -2,12 +2,13 @@ import React from 'react';
 import { Mark, Stars, FlipRate, Pill, Icon } from './ui.jsx';
 import { fmtNum, rateDigits, ageLabel, isOpenNow, hoursLabel, directionsUrl, mapsUrl } from '../lib/pricing.js';
 
-function estimateLabel(quotedAt, live) {
+function estimateLabel(quotedAt, live, daily) {
   if (!live || !quotedAt) return 'Estimate · offline sample rates';
+  if (daily) return `Estimate · daily reference rate, ${ageLabel(quotedAt)} old`;
   return `Estimate · market quote ${ageLabel(quotedAt)} old`;
 }
 
-export default function ProviderCard({ row, s, quotedAt, live, distKm, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
+export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
   const { provider: p, branch: b, branches, q, total } = row;
   const d = rateDigits(Math.max(q.sellRate, q.buyRate));
   const open = isOpenNow(b);
@@ -103,7 +104,7 @@ export default function ProviderCard({ row, s, quotedAt, live, distKm, selected,
           </div>
 
           <div className="flex items-center justify-between gap-2 text-xs text-steel-500">
-            <span>{estimateLabel(quotedAt, live)}</span>
+            <span>{estimateLabel(quotedAt, live, daily)}</span>
             <label className={`flex items-center gap-2 text-sm font-semibold text-ink ${compareDisabled && !compared ? 'opacity-50' : 'cursor-pointer'}`}>
               <input type="checkbox" className="peer sr-only" checked={compared} disabled={compareDisabled && !compared} onChange={() => onCompare(p.id)} />
               <span className="well flex h-6 w-6 items-center justify-center !rounded-md text-sky peer-checked:[&>svg]:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-sky-light">

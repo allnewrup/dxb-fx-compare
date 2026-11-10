@@ -67,8 +67,8 @@ export default function App() {
     try {
       const live = await refreshLiveRates();
       const enriched = await enrichFromGoogle(providersRef.current);
-      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, quoteTimes: live.quoteTimes, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
-      setStatus({ tone: 'ok', text: `Market rate from ${live.host}, fetched ${fmtTime(live.updatedAt)} (UAE time).` });
+      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, quoteTimes: live.quoteTimes, dailyCodes: live.dailyCodes ?? [], sourceInfo: live.sourceInfo, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
+      setStatus({ tone: 'ok', text: `Market rates cross-checked across ${live.sourcesUsed?.length ?? 1} of ${live.sourcesTried ?? 1} sources (${live.host}), fetched ${fmtTime(live.updatedAt)} UAE time.` });
     } catch (e) {
       setStatus({ tone: 'err', text: silent ? `${e.message} Retrying every minute.` : e.message });
     } finally {
@@ -90,8 +90,21 @@ export default function App() {
     const times = data.quoteTimes ? [s.from, s.to].map((c) => data.quoteTimes[c]).filter(Boolean) : [];
     return times.length ? new Date(Math.min(...times.map((d) => d.getTime()))) : data.quotedAt;
   }, [data.quoteTimes, data.quotedAt, s.from, s.to]);
+  const pairDaily = !!data.liveHost && (data.dailyCodes ?? []).some((c) => c === s.from || c === s.to);
   const quoteAgeMin = pairQuotedAt ? (Date.now() - pairQuotedAt.getTime()) / 60000 : 0;
-  const quoteStale = quoteAgeMin > 30;
+  const quoteStale = !pairDaily && quoteAgeMin > 30; // daily-fix currencies are expected to be hours old
+  const codes = useMemo(() => Object.keys(data.mid), [data.mid]);
+  // Provenance of this pair's rate: which source won and how many sources agreed on each currency.
+  const pairNote = useMemo(() => {
+    const infos = [s.from, s.to].map((c) => data.sourceInfo?.[c]).filter(Boolean);
+    if (!infos.length) return '';
+    const label = { yahoo: 'Yahoo Finance FX spot', ecb: 'ECB', erapi: 'open.er-api.com', fawaz: 'fawazahmed0' };
+    const names = [...new Set(infos.map((i) => label[i.source]))].join(' + ');
+    const weakest = infos.reduce((a, b) => (b.agree < a.agree || (b.agree === a.agree && b.total < a.total) ? b : a)); // report the leg with least agreement
+    const { agree, total } = weakest;
+    const out = [...new Set(infos.flatMap((i) => i.rejected))].map((id) => label[id]);
+    return `${s.from}/${s.to}: ${names}${total > 1 ? `, ${agree} of ${total} sources agree` : ', single source'}${out.length ? ` (${out.join(', ')} discarded as an outlier)` : ''}.`;
+  }, [data.sourceInfo, s.from, s.to]);
 
   // ---- derive rows -------------------------------------------------------
   const origin = userLoc ? [userLoc.lat, userLoc.lng] : area.center;
@@ -196,15 +209,15 @@ export default function App() {
         {geo.err && <span className="text-sm text-[#a3261b]" role="alert">{geo.err}</span>}
       </div>
 
-      <SearchConsole s={s} set={set} onRefresh={() => refresh(false)} refreshing={refreshing} />
+      <SearchConsole s={s} set={set} onRefresh={() => refresh(false)} refreshing={refreshing} codes={codes} />
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="board flex items-center gap-3 px-3 py-1.5" aria-label="Market mid rate">
           <span className="font-display text-xs font-semibold uppercase tracking-[.16em] text-steel-400">{data.liveHost ? 'Live market' : 'Offline sample'}</span>
           <span className="font-mono text-sm font-semibold text-led">1 {s.from} = {(data.mid[s.to] / data.mid[s.from]).toFixed(rateDigits(data.mid[s.to] / data.mid[s.from]))} {s.to}</span>
-          {pairQuotedAt && <span className={`text-xs ${quoteStale ? 'font-semibold text-led' : 'text-steel-400'}`}>quote {fmtTime(pairQuotedAt)} · {ageLabel(pairQuotedAt)} old</span>}
+          {pairQuotedAt && <span className={`text-xs ${quoteStale ? 'font-semibold text-led' : 'text-steel-400'}`}>{pairDaily ? 'daily reference rate' : 'quote'} {fmtTime(pairQuotedAt)} · {ageLabel(pairQuotedAt)} old</span>}
         </div>
-        <p className={`min-w-0 flex-1 text-sm ${toneCls}`} role="status" aria-live="polite">{status.text}</p>
+        <p className={`min-w-0 flex-1 text-sm ${toneCls}`} role="status" aria-live="polite">{status.text}{pairNote && <span className="block text-steel-600">{pairNote}</span>}</p>
       </div>
 
       {quoteStale && (
@@ -284,7 +297,7 @@ export default function App() {
           )}
           {sorted.map((r) => (
             <ProviderCard
-              key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost} distKm={userLoc ? km(origin, [r.branch.lat, r.branch.lng]) : null}
+              key={r.provider.id} row={r} s={s} quotedAt={pairQuotedAt} live={!!data.liveHost} daily={pairDaily} distKm={userLoc ? km(origin, [r.branch.lat, r.branch.lng]) : null}
               selected={sel?.pid === r.provider.id}
               badges={badgeFor(r)}
               savings={stats ? (s.mode === 'sell' ? r.total - stats.min : stats.max - r.total) : 0}
@@ -321,7 +334,7 @@ export default function App() {
 
       <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
         <p><strong className="text-ink">About Dirham Desk.</strong> Dirham Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
-        <p>Indicative rates only. Market rates come from a public feed (Yahoo Finance FX spot) when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, and ratings, review counts, pins and reviews are a pre-loaded sample. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
+        <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, and ratings, review counts, pins and reviews are a pre-loaded sample. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
       </footer>
 
       {compareRows.length >= 2 && <CompareTray rows={compareRows} s={s} onRemove={toggleCompare} onClear={() => setCompare([])} />}

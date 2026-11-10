@@ -1,8 +1,20 @@
-import React from 'react';
-import { CURRENCIES, AREAS } from '../data/seed.js';
+import React, { useMemo } from 'react';
+import { AREAS } from '../data/seed.js';
+import { currencyGroups } from '../lib/currencies.js';
 import { Switch, Icon } from './ui.jsx';
 
-export default function SearchConsole({ s, set, onRefresh, refreshing }) {
+function CurrencyOptions({ groups }) {
+  const opt = (c) => <option key={c.code} value={c.code}>{c.flag} {c.code} · {c.name}</option>;
+  return (
+    <>
+      <optgroup label="Popular">{groups.popular.map(opt)}</optgroup>
+      <optgroup label={`All currencies (${groups.popular.length + groups.rest.length})`}>{groups.rest.map(opt)}</optgroup>
+    </>
+  );
+}
+
+export default function SearchConsole({ s, set, onRefresh, refreshing, codes }) {
+  const groups = useMemo(() => currencyGroups(codes), [codes]);
   const pick = (key, other) => (e) => {
     const v = e.target.value;
     if (v === s[other]) set({ from: s.to, to: s.from });
@@ -16,7 +28,7 @@ export default function SearchConsole({ s, set, onRefresh, refreshing }) {
           <label className="min-w-0 flex-1 xl:w-40">
             <span className="label">From</span>
             <select id="from" className="field mt-1" value={s.from} onChange={pick('from', 'to')}>
-              {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code} · {c.name}</option>)}
+              <CurrencyOptions groups={groups} />
             </select>
           </label>
           <button type="button" className="btn h-[42px] w-[46px] shrink-0 !px-0" onClick={() => set({ from: s.to, to: s.from })} aria-label="Swap currencies">
@@ -25,7 +37,7 @@ export default function SearchConsole({ s, set, onRefresh, refreshing }) {
           <label className="min-w-0 flex-1 xl:w-40">
             <span className="label">To</span>
             <select id="to" className="field mt-1" value={s.to} onChange={pick('to', 'from')}>
-              {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code} · {c.name}</option>)}
+              <CurrencyOptions groups={groups} />
             </select>
           </label>
         </div>

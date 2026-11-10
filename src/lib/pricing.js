@@ -28,7 +28,7 @@ export function convert(q, amount, mode) {
 export const fmtNum = (v, d = 2) =>
   new Intl.NumberFormat('en-AE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
 
-export const rateDigits = (r) => (r >= 100 ? 2 : r >= 10 ? 3 : 4);
+export const rateDigits = (r) => (r >= 100 ? 2 : r >= 10 ? 3 : r >= 0.1 ? 4 : r >= 0.01 ? 5 : 6);
 
 export function isOpenNow(branch, now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
@@ -96,7 +96,7 @@ export function ageLabel(date, now = Date.now()) {
   return `${Math.floor(h / 24)} d`;
 }
 
-const REGION_CCY = { US: 'USD', GB: 'GBP', IN: 'INR', PH: 'PHP', PK: 'PKR', SA: 'SAR', DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', IE: 'EUR', AT: 'EUR', PT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR' };
+const REGION_CCY = { US: 'USD', GB: 'GBP', IN: 'INR', PH: 'PHP', PK: 'PKR', SA: 'SAR', CA: 'CAD', AU: 'AUD', NZ: 'NZD', JP: 'JPY', CN: 'CNY', CH: 'CHF', TR: 'TRY', EG: 'EGP', KW: 'KWD', QA: 'QAR', OM: 'OMR', BH: 'BHD', LK: 'LKR', BD: 'BDT', NP: 'NPR', TH: 'THB', MY: 'MYR', SG: 'SGD', RU: 'RUB', ZA: 'ZAR', KR: 'KRW', ID: 'IDR', NG: 'NGN', KE: 'KES', BR: 'BRL', MX: 'MXN', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', UA: 'UAH', VN: 'VND', DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', IE: 'EUR', AT: 'EUR', PT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR' };
 /** Best guess of the visitor's home currency from the browser locale; USD if unknown, null for UAE locales. */
 export function guessHomeCurrency() {
   try {
