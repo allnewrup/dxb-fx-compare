@@ -46,7 +46,8 @@ Dirham Desk is a React single-page app that lines up UAE exchange houses and ban
 - **Left sidebar filters**: minimum Google rating, open now, emirate checkboxes, sort order, reset.
 
 ### Map and reviews
-- **Rate pins map** is a real map (Leaflet on OpenStreetMap tiles). Every filtered branch is a tag carrying the provider mark and the rate for your transaction, and the tag's pointer sits exactly on the branch coordinate. Tags that would overlap group into a count circle; click it to zoom in.
+- **Rate pins map** is a real vector map (MapLibre on OpenFreeMap tiles). Every filtered branch is a tag carrying the provider mark and the rate for your transaction, and the tag's pointer sits exactly on the branch coordinate. Tags that would overlap group into a count circle; click it to zoom in.
+- **Map language**: English, Arabic, Bengali, Tamil, Malayalam, Hindi or Urdu (remembered in the browser, and defaulted from the browser language), plus a "Standard map" option with street names in the local language. The base map has all of its own text removed and the app draws city, town and district labels itself, so every script renders correctly. Names come only from OpenStreetMap `name:xx` tags and Wikidata labels (built by `node scripts/build-map-places.mjs`); nothing is machine-translated. A place with no name in the chosen language is shown in English, and the panel says how many places have one (English 1,041, Arabic 974, Malayalam 254, Urdu 82, Bengali 22, Hindi 16, Tamil 14, out of 1,048). The Google Maps embed follows the same language.
 - **Use my location** (browser geolocation) marks you on the map, features the three nearest branches with straight-line distances, shows a distance on each card and re-ranks the "Closest" sort.
 - **Google Maps button** opens an embed of the selected branch in place, and minimizes back into a button.
 - **Get directions** on every branch deep-links to Google Maps navigation.
@@ -157,7 +158,7 @@ dxb-fx-compare/
         ├── Sidebar.jsx           Rating, open now, emirate, sort
         ├── SortTabs.jsx          Best Rate / Highest Rated / Closest tabs
         ├── ProviderCard.jsx      Result card with rate board
-        ├── MapPanel.jsx          Leaflet rate-pin map, location marker and Google Maps button
+        ├── MapPanel.jsx          MapLibre rate-pin map with language picker, location marker and Google Maps button
         ├── ReviewsDrawer.jsx     Reviews view
         ├── CompareTray.jsx       Pinned side-by-side table
         ├── QrBadge.jsx           Header badge, full-screen QR modal, app link constant

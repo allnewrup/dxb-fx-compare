@@ -7,3 +7,4 @@ dist
 *.log
 .vercel
 scripts/.osm-cache.json
+scripts/.places-cache.json

@@ -119,10 +119,26 @@
   background: #0b5fd8; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(20,30,40,.45);
   font: 700 15px 'Barlow Condensed', sans-serif; cursor: pointer;
 }
-.leaflet-container { font-family: inherit; }
 
 .rate-tag.near { border-color: #12805c; border-width: 2px; }
 .rate-tag.near::after { border-color: #12805c; border-width: 2px; }
 .rate-tag .rk { position: absolute; top: -9px; right: -9px; width: 18px; height: 18px; border-radius: 50%; background: #12805c; color: #fff; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font: 700 11px 'Barlow Condensed', sans-serif; }
 .user-dot { width: 18px; height: 18px; border-radius: 50%; background: #0b5fd8; border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(11,95,216,.5), 0 1px 4px rgba(0,0,0,.5); animation: pulse 2s infinite; }
 @keyframes pulse { 70% { box-shadow: 0 0 0 14px rgba(11,95,216,0), 0 1px 4px rgba(0,0,0,.5); } 100% { box-shadow: 0 0 0 0 rgba(11,95,216,0), 0 1px 4px rgba(0,0,0,.5); } }
+
+/* Map place labels (multilingual). The span is centred on the place's coordinate. */
+.place-label { background: none; border: 0; }
+.place-label span {
+  position: absolute; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none;
+  font-family: system-ui, 'Noto Sans', 'Noto Sans Arabic', 'Noto Sans Bengali', 'Noto Sans Tamil', 'Noto Sans Malayalam', 'Noto Sans Devanagari', 'Nirmala UI', sans-serif;
+  font-weight: 600; color: #3b4651; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 5px #fff, 0 0 6px #fff;
+}
+.place-label.r1 span { font-size: 16px; font-weight: 700; color: #1b232b; letter-spacing: .02em; }
+.place-label.r2 span { font-size: 14px; color: #26313b; }
+.place-label.r3 span { font-size: 12.5px; }
+.place-label.r4 span, .place-label.r5 span { font-size: 11.5px; font-weight: 500; color: #58626e; }
+
+/* MapLibre marker wrappers */
+.rate-wrap { width: 84px; height: 26px; cursor: pointer; }
+.place-label { width: 0; height: 0; pointer-events: none; }
+.maplibregl-ctrl-attrib { font-size: 11px; }

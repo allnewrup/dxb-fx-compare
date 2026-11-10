@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { AREAS, EMIRATES } from './data/seed.js';
 import { getSnapshot, refreshLiveRates, enrichFromGoogle } from './services/fxDataService.js';
 import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates, directionsUrl } from './lib/pricing.js';
@@ -6,10 +6,21 @@ import SearchConsole from './components/SearchConsole.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SortTabs from './components/SortTabs.jsx';
 import ProviderCard from './components/ProviderCard.jsx';
-import MapPanel from './components/MapPanel.jsx';
+const MapPanel = lazy(() => import('./components/MapPanel.jsx')); // keeps the map engine out of the first load
 import ReviewsDrawer from './components/ReviewsDrawer.jsx';
 import CompareTray from './components/CompareTray.jsx';
 import { QrBadge, QrModal } from './components/QrBadge.jsx';
+
+/** If the lazily loaded map chunk fails (offline, blocked), show a message instead of a blank page. */
+class MapBoundary extends React.Component {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    return this.state.failed
+      ? <div className="panel p-5 text-sm text-[#a3261b]" role="alert">The map could not load. Reload the page to try again. The list of branches still works.</div>
+      : this.props.children;
+  }
+}
 
 const BADGE = {
   rate: { text: '★ Best rate', cls: 'badge-gold' },
@@ -326,7 +337,7 @@ export default function App() {
             <button role="tab" type="button" className="key" aria-selected={panel === 'reviews'} onClick={() => setPanel('reviews')}>Google reviews</button>
           </div>
           {panel === 'map' ? (
-            <MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} user={userLoc} nearIds={nearest.map((x) => x.b.id)} />
+            <MapBoundary><Suspense fallback={<div className="panel p-5 text-sm text-steel-600">Loading map…</div>}><MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} user={userLoc} nearIds={nearest.map((x) => x.b.id)} /></Suspense></MapBoundary>
           ) : (
             <ReviewsDrawer provider={data.providers.find((p) => p.id === reviewPid)} onClose={() => setPanel('map')} />
           )}
