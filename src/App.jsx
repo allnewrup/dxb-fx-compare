@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { AREAS, EMIRATES } from './data/seed.js';
 import { getSnapshot, refreshLiveRates, enrichFromGoogle } from './services/fxDataService.js';
-import { quote, convert, areaMatches, isOpenNow, km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, areaForEmirates, directionsUrl } from './lib/pricing.js';
+import { km, fmtNum, rateDigits, ageLabel, guessHomeCurrency, emiratesForArea, directionsUrl } from './lib/pricing.js';
+import { applyPatch, originFor, deriveRows, isSpecificArea, sortRows, pairNoteFor } from './lib/results.js';
 import SearchConsole from './components/SearchConsole.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SortTabs from './components/SortTabs.jsx';
@@ -10,6 +11,7 @@ const MapPanel = lazy(() => import('./components/MapPanel.jsx')); // keeps the m
 import ReviewsDrawer from './components/ReviewsDrawer.jsx';
 import CompareTray from './components/CompareTray.jsx';
 import { QrBadge, QrModal } from './components/QrBadge.jsx';
+import ChatLauncher from './components/ChatLauncher.jsx';
 
 /** If the lazily loaded map chunk fails (offline, blocked), show a message instead of a blank page. */
 class MapBoundary extends React.Component {
@@ -37,34 +39,41 @@ export default function App() {
     minRating: 0, openNow: false, query: '', emirates: Object.fromEntries(EMIRATES.map((e) => [e, true])), type: 'all', sort: 'rate',
     };
   });
-  const set = useCallback((patch) => setS((p) => {
-    const next = { ...p, ...patch };
-    // One source of truth for location: the area dropdown and the emirate ticks always agree.
-    if ('areaId' in patch && !('emirates' in patch)) next.emirates = emiratesForArea(patch.areaId);
-    else if ('emirates' in patch && !('areaId' in patch)) next.areaId = areaForEmirates(patch.emirates, p.areaId);
-    return next;
-  }), []);
-  const [compare, setCompare] = useState([]);
+  const sRef = useRef(s); // always-current copy so the chat assistant can chain several changes in one turn
+  const set = useCallback((patch) => {
+    sRef.current = applyPatch(sRef.current, patch); // one source of truth for location: area dropdown and emirate ticks always agree
+    setS((p) => applyPatch(p, patch));
+  }, []);
+  const [compare, setCompareState] = useState([]);
+  const compareRef = useRef(compare);
+  const setCompare = useCallback((v) => setCompareState((c) => { const n = typeof v === 'function' ? v(c) : v; compareRef.current = n; return n; }), []);
   const [picked, setPicked] = useState({});
+  const pickedRef = useRef(picked);
+  pickedRef.current = picked;
   const [sel, setSel] = useState(null); // {pid, bid}
   const [panel, setPanel] = useState('map');
   const [reviewPid, setReviewPid] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
-  const [userLoc, setUserLoc] = useState(null); // {lat, lng, acc}
+  const [userLoc, setUserLocState] = useState(null); // {lat, lng, acc}
+  const userLocRef = useRef(null);
+  const setUserLoc = useCallback((v) => { userLocRef.current = v; setUserLocState(v); }, []);
   const [geo, setGeo] = useState({ busy: false, err: '' });
-  const locate = useCallback(() => {
-    if (!navigator.geolocation) { setGeo({ busy: false, err: 'Your browser does not support location.' }); return; }
+  /** Asks the browser for the visitor's position. Resolves {ok} or {ok:false, err} so the chat assistant can wait for the answer. */
+  const locate = useCallback(() => new Promise((resolve) => {
+    const fail = (err) => { setGeo({ busy: false, err }); resolve({ ok: false, err }); };
+    if (!navigator.geolocation) { fail('Your browser does not support location.'); return; }
     setGeo({ busy: true, err: '' });
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
         setGeo({ busy: false, err: '' });
-        setS((p) => ({ ...p, sort: 'near' }));
+        set({ sort: 'near' });
+        resolve({ ok: true });
       },
-      (e) => setGeo({ busy: false, err: e.code === 1 ? 'Location permission was denied. Allow it in your browser settings to see nearby branches.' : 'Could not get your location. Try again.' }),
+      (e) => fail(e.code === 1 ? 'Location permission was denied. Allow it in your browser settings to see nearby branches.' : 'Could not get your location. Try again.'),
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
     );
-  }, []);
+  }), [set, setUserLoc]);
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState({ tone: 'info', text: 'Fetching live market rates…' });
   const panelRef = useRef(null);
@@ -72,6 +81,8 @@ export default function App() {
   const fmtTime = (d) => d.toLocaleString('en-AE', { timeZone: 'Asia/Dubai', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
   const providersRef = useRef(data.providers);
   providersRef.current = data.providers;
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   const refresh = useCallback(async (silent = false) => {
     setRefreshing(true);
@@ -106,51 +117,19 @@ export default function App() {
   const quoteStale = !pairDaily && quoteAgeMin > 30; // daily-fix currencies are expected to be hours old
   const codes = useMemo(() => Object.keys(data.mid), [data.mid]);
   // Provenance of this pair's rate: which source won and how many sources agreed on each currency.
-  const pairNote = useMemo(() => {
-    const infos = [s.from, s.to].map((c) => data.sourceInfo?.[c]).filter(Boolean);
-    if (!infos.length) return '';
-    const label = { yahoo: 'Yahoo Finance FX spot', ecb: 'ECB', erapi: 'open.er-api.com', fawaz: 'fawazahmed0' };
-    const names = [...new Set(infos.map((i) => label[i.source]))].join(' + ');
-    const weakest = infos.reduce((a, b) => (b.agree < a.agree || (b.agree === a.agree && b.total < a.total) ? b : a)); // report the leg with least agreement
-    const { agree, total } = weakest;
-    const out = [...new Set(infos.flatMap((i) => i.rejected))].map((id) => label[id]);
-    return `${s.from}/${s.to}: ${names}${total > 1 ? `, ${agree} of ${total} sources agree` : ', single source'}${out.length ? ` (${out.join(', ')} discarded as an outlier)` : ''}.`;
-  }, [data.sourceInfo, s.from, s.to]);
+  const pairNote = useMemo(() => pairNoteFor(data, s.from, s.to), [data.sourceInfo, s.from, s.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- derive rows -------------------------------------------------------
-  const origin = userLoc ? [userLoc.lat, userLoc.lng] : area.center;
-  const tokens = useMemo(() => s.query.toLowerCase().split(/\s+/).filter(Boolean), [s.query]);
+  const origin = originFor(s, userLoc);
   const resultsRef = useRef(null);
   const PAGE = 12;
   const [shown, setShown] = useState(PAGE);
   const filterSig = JSON.stringify([s.query, s.sort, s.type, s.minRating, s.openNow, s.areaId, s.emirates, s.from, s.to, s.mode, s.channel]);
   useEffect(() => { setShown(PAGE); }, [filterSig]);
-  const rows = useMemo(() => {
-    const out = [];
-    for (const p of data.providers) {
-      if (s.type !== 'all' && p.type !== s.type) continue;
-      if ((p.rating ?? 0) < s.minRating) continue;
-      const branches = p.branches.filter((b) => s.emirates[b.emirate] && areaMatches(b, s.areaId) && (!s.openNow || isOpenNow(b) === true)
-        && tokens.every((tk) => `${p.name} ${p.type === 'bank' ? 'bank' : 'exchange bureau'} ${b.area} ${b.emirate} ${b.address}`.toLowerCase().includes(tk)));
-      if (!branches.length) continue;
-      const withDist = branches.map((b) => ({ b, d: km(origin, [b.lat, b.lng]) })).sort((x, y) => x.d - y.d);
-      const branch = branches.find((b) => b.id === picked[p.id]) ?? withDist[0].b;
-      const q = quote(p, data.mid, s.from, s.to, s.channel);
-      out.push({ provider: p, branches: withDist.map((x) => x.b), branch, nearestKm: withDist[0].d, q, total: convert(q, s.amount, s.mode) });
-    }
-    return out;
-  }, [data, s, picked, area, tokens, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => deriveRows(data, s, picked, origin), [data, s, picked, origin[0], origin[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const specificArea = !!userLoc || !['all', 'dubai', 'abudhabi'].includes(s.areaId);
-  const sorted = useMemo(() => {
-    const r = [...rows];
-    if (s.sort === 'high') r.sort((a, b) => b.total - a.total);
-    else if (s.sort === 'low') r.sort((a, b) => a.total - b.total);
-    else if (s.sort === 'rate') r.sort((a, b) => (s.mode === 'sell' ? b.total - a.total : a.total - b.total));
-    else if (s.sort === 'rating') r.sort((a, b) => (b.provider.rating ?? -1) - (a.provider.rating ?? -1) || (b.provider.reviewCount ?? 0) - (a.provider.reviewCount ?? 0));
-    else r.sort((a, b) => (specificArea ? a.nearestKm - b.nearestKm : b.branches.length - a.branches.length) || (b.provider.rating ?? -1) - (a.provider.rating ?? -1));
-    return r;
-  }, [rows, s.sort, s.mode, specificArea]);
+  const specificArea = isSpecificArea(s, userLoc);
+  const sorted = useMemo(() => sortRows(rows, s, specificArea), [rows, s.sort, s.mode, specificArea]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stats = useMemo(() => {
     if (!rows.length) return null;
@@ -178,10 +157,12 @@ export default function App() {
   const nearest = useMemo(() => (userLoc ? [...pins].sort((a, b) => a.dist - b.dist).slice(0, 3) : []), [pins, userLoc]);
   const selected = pins.find((x) => x.p.id === sel?.pid && x.b.id === sel?.bid) ?? null;
 
+  const onMapRef = useRef(null);
   const onMap = (pid, bid) => {
     setSel({ pid, bid }); setPanel('map');
     if (window.innerWidth < 1024) panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  onMapRef.current = onMap;
   const onReviews = (pid) => {
     setReviewPid(pid); setPanel('reviews');
     if (window.innerWidth < 1024) panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -199,6 +180,19 @@ export default function App() {
     if (r === stats.mostBr && r.branches.length > 1) b.push(BADGE.branches);
     return b;
   };
+
+  // Controller handed to the chat assistant: live getters (refs, so a tool can chain several changes in one turn) and the same actions the buttons use.
+  const chatApp = useMemo(() => ({
+    state: () => sRef.current,
+    data: () => dataRef.current,
+    userLoc: () => userLocRef.current,
+    picked: () => pickedRef.current,
+    compare: () => compareRef.current,
+    set,
+    setCompare,
+    locate,
+    focus: (pid, bid) => { setPicked((x) => ({ ...x, [pid]: bid })); onMapRef.current(pid, bid); },
+  }), [set, setCompare, locate]);
 
   const toneCls = { info: 'text-steel-600', ok: 'text-go', err: 'text-[#a3261b]' }[status.tone];
 
@@ -355,12 +349,13 @@ export default function App() {
       </section>
 
       <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
-        <p><strong className="text-ink">About Xchange Desk.</strong> Xchange Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed.</p>
+        <p><strong className="text-ink">About Xchange Desk.</strong> Xchange Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed. The optional Ask Xchange assistant uses Claude from Anthropic: what you type in the chat is sent to Anthropic to produce answers, and Xchange Desk does not store it.</p>
         <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are a pre-loaded sample for the first eight exchange houses only, and are not loaded for the rest. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
       </footer>
 
       {compareRows.length >= 2 && <CompareTray rows={compareRows} s={s} onRemove={toggleCompare} onClear={() => setCompare([])} />}
       {qrOpen && <QrModal onClose={() => setQrOpen(false)} />}
+      <ChatLauncher app={chatApp} lift={compareRows.length >= 2} />
     </div>
   );
 }

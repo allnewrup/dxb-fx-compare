@@ -53,6 +53,15 @@ Xchange Desk is a React single-page app that lines up UAE exchange houses and ba
 - **Get directions** on every branch deep-links to Google Maps navigation.
 - **Reviews drawer** shows aggregate rating, star ratings, reviewer, branch visited and relative time, filterable by branch.
 
+### Ask Xchange (AI assistant)
+
+A floating **Ask Xchange** button opens a chat panel. The assistant can answer questions *and* operate the page: "best rate for 1,000 USD to AED near Deira, open now", "compare the top three", "banks open now in Sharjah", "closest to me", "what should I bring?". It replies in the user's language.
+
+- **Model:** Claude Haiku 5.5 (`claude-haiku-5-5`), thinking off, 1,024 output tokens per reply. Change it in `src/lib/chatSpec.js`.
+- **Tools** run in the browser, on the same state and calculation code the page uses: `update_search`, `get_results`, `get_provider_details`, `compare_providers`, `show_on_map`, `find_nearest`. Tool inputs are validated before anything changes; bad input is returned to the model as an error and changes nothing.
+- **No invented numbers:** every figure the assistant quotes comes from a tool result. Provider rates stay labelled as estimates, sample ratings as sample, and missing hours as "not listed".
+- **Privacy:** the conversation is sent to Anthropic to produce answers. The server keeps no chat log, and the browser keeps the chat only in `sessionStorage` for the tab. Coordinates are never sent; the model only sees distances.
+
 ### Mobile app QR code
 A header badge shows a mini QR code. Clicking it opens a full-screen modal with a large scannable code ("Scan to download for iOS & Android").
 
@@ -137,10 +146,14 @@ To use real counter rates, replace the spread model in `quote()` with rates you 
 ```
 dxb-fx-compare/
 ├── index.html                    Fonts and root element
-├── vite.config.js                Vite + React, and the /api/yahoo proxy
+├── vite.config.js                Vite + React, the /api/yahoo proxy, and a dev route for /api/chat
+├── vercel.json                   Yahoo rewrite and the chat function's time limit
+├── api/
+│   ├── yahoo.js                  Serverless proxy to Yahoo Finance
+│   └── chat.js                   Serverless relay to Claude (streams SSE, holds the API key)
 ├── tailwind.config.js            Palette, fonts, skeuomorphic shadow scale
 ├── postcss.config.js
-├── .env.example                  Optional Places proxy URL
+├── .env.example                  ANTHROPIC_API_KEY and optional limits
 ├── docs/screenshot.png
 └── src/
     ├── main.jsx                  Entry point
@@ -152,13 +165,19 @@ dxb-fx-compare/
     ├── services/
     │   └── fxDataService.js      Data adapter: getSnapshot, refreshLiveRates, enrichFromGoogle
     ├── lib/
-    │   └── pricing.js            Quote and conversion maths, open-now, distance, deep links
+    │   ├── pricing.js            Quote and conversion maths, open-now, distance, deep links
+    │   ├── results.js            Row derivation, sorting and filter-merging shared by the page and the assistant
+    │   ├── chatSpec.js           Assistant model, limits, system prompt and tool schemas (used by server and browser)
+    │   ├── chatTools.js          The assistant's tools; they run in the browser against live page state
+    │   └── chatClient.js         Streams /api/chat and runs the tool loop
     └── components/
         ├── SearchConsole.jsx     Pair, amount, switches, area, refresh
         ├── Sidebar.jsx           Rating, open now, emirate, sort
         ├── SortTabs.jsx          Best Rate / Highest Rated / Closest tabs
         ├── ProviderCard.jsx      Result card with rate board
         ├── MapPanel.jsx          MapLibre rate-pin map with language picker, location marker and Google Maps button
+        ├── ChatLauncher.jsx      Floating button; lazy-loads the chat panel
+        ├── ChatPanel.jsx         Chat UI: suggestions, streaming replies, action chips, stop / new chat
         ├── ReviewsDrawer.jsx     Reviews view
         ├── CompareTray.jsx       Pinned side-by-side table
         ├── QrBadge.jsx           Header badge, full-screen QR modal, app link constant
@@ -182,6 +201,8 @@ enrichFromGoogle(list) // → { providers, enriched }  no-op until VITE_PLACES_P
 | Setting | Where | Purpose |
 | --- | --- | --- |
 | `VITE_PLACES_PROXY` | `.env` | URL of your Google Places proxy. Leave empty to use the sample ratings and reviews. |
+| `ANTHROPIC_API_KEY` | `.env.local` (dev) / `vercel env add ANTHROPIC_API_KEY` (production) | Turns the assistant on. Server-side only: never prefix it with `VITE_`. Without it the chat shows "not switched on yet" and nothing else changes. |
+| `CHAT_REQUESTS_PER_10_MIN`, `CHAT_DAILY_CAP` | environment | Best-effort limits per visitor and per day (defaults 40 and 4,000). They are per server instance; the hard ceiling is the monthly spend limit you set in the Anthropic Console. |
 | `APP_DOWNLOAD_URL` | `src/components/QrBadge.jsx` | The link encoded in the QR code. **It is a placeholder (`https://example.com/get-xchange-desk`). Replace it with your real app smart link before sharing the app.** |
 | Refresh interval | `src/App.jsx` (`setInterval(..., 60000)`) | How often live rates reload. |
 | Providers, spreads, fees | `src/data/seed.js` | Per-provider `margin`, `bias`, `fee`, branches. |
@@ -235,6 +256,8 @@ app.use('/api/yahoo', async (req, res) => {
 app.use(express.static('dist'));
 app.listen(8080);
 ```
+
+**The assistant** needs a server too: `api/chat.js` is a standard Vercel function (it is the same file `npm run dev` serves). Add `ANTHROPIC_API_KEY`, redeploy, and set a monthly spend limit in the Anthropic Console. On another host, expose the same handler at `POST /api/chat`. It accepts `{messages, context}` and streams server-sent events (`text`, `done`, `error`).
 
 For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo's endpoint is unofficial and has no guaranteed uptime or licence for commercial redistribution. For a production product, use a licensed FX data provider (for example a paid API with an SLA) and point `fromYahoo()` in `fxDataService.js` at it.
 
