@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mark, Stars, FlipRate, Pill, Icon } from './ui.jsx';
-import { fmtNum, rateDigits, ageLabel, isOpenNow, hoursLabel, directionsUrl, mapsUrl } from '../lib/pricing.js';
+import { fmtNum, rateDigits, ageLabel, isOpenNow, hoursLabel, directionsUrl, mapsUrl, reviewsUrl } from '../lib/pricing.js';
 
 function estimateLabel(quotedAt, live, daily) {
   if (!live || !quotedAt) return 'Estimate · offline sample rates';
@@ -8,7 +8,7 @@ function estimateLabel(quotedAt, live, daily) {
   return `Estimate · market quote ${ageLabel(quotedAt)} old`;
 }
 
-export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, selected, onMap, onReviews, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
+export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, selected, onMap, onReviews, hasRatings, compared, compareDisabled, onCompare, badges, savings, activeBranchId, onPickBranch }) {
   const { provider: p, branch: b, branches, q, total } = row;
   const d = rateDigits(Math.max(q.sellRate, q.buyRate));
   const open = isOpenNow(b);
@@ -44,7 +44,7 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
                     <span className="font-semibold">{p.rating.toFixed(1)} ★</span>
                     <span className="text-steel-500">({p.reviewCount.toLocaleString('en-AE')} Google reviews)</span>
                   </>
-                ) : <span className="text-steel-500">No Google rating loaded</span>}
+                ) : hasRatings ? <span className="text-steel-500">No Google rating loaded</span> : null}
                 <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold shadow-well ${p.type === 'bank' ? 'bg-sky text-white' : 'bg-steel-200 text-steel-600'}`}>{p.type === 'bank' ? 'Bank' : 'Exchange house'}</span>
               </div>
             </div>
@@ -79,7 +79,9 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
 
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="btn btn-sm" onClick={() => onMap(p.id, b.id)}><Icon.pin /> View on map</button>
-            <button type="button" className="btn btn-sm" onClick={() => onReviews(p.id)}>Read Google reviews</button>
+            {p.reviews?.length
+              ? <button type="button" className="btn btn-sm" onClick={() => onReviews(p.id)}>Read Google reviews</button>
+              : <a className="btn btn-sm" href={reviewsUrl(p)} target="_blank" rel="noreferrer">Reviews on Google ↗</a>}
             <a className="btn btn-sm" href={directionsUrl(b, p)} target="_blank" rel="noreferrer"><Icon.nav /> Get directions</a>
             <a className="text-sm font-semibold text-sky underline-offset-2 hover:underline" href={mapsUrl(b, p)} target="_blank" rel="noreferrer">Google Maps ↗</a>
           </div>

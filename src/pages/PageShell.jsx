@@ -18,7 +18,7 @@ export const Table = ({ head, rows }) => (
 );
 
 /** Who runs the site, as one phrase. */
-export const operatorPhrase = () => (SITE.operator ? SITE.operator : `${SITE.name}, an independent project`);
+export const operatorPhrase = () => SITE.operator || 'an independent business';
 
 export function SiteNav({ current, className = '' }) {
   return (

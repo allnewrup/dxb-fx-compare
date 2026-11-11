@@ -51,8 +51,8 @@ export default function Methodology() {
       <H2>Step 3: ranking</H2>
       <UL>
         <li><strong className="text-ink">Best rate</strong> sorts by the amount that matters to you: the most you would receive when selling, or the least you would pay when buying, after the fee. <strong className="text-ink">Rate: high to low</strong> and <strong className="text-ink">low to high</strong> sort the same total in either direction.</li>
-        <li><strong className="text-ink">Top rated</strong> sorts by rating, and providers with no rating come last. <strong className="text-ink">Closest</strong> sorts by straight-line distance to your location or to the centre of the area you chose.</li>
-        <li>Nothing is promoted, sponsored or paid for. Badges ("Best rate", "Top rated", "Most branches") are computed from the current results.</li>
+        <li><strong className="text-ink">Closest</strong> sorts by straight-line distance to your location or to the centre of the area you chose.</li>
+        <li>Nothing is promoted, sponsored or paid for. Badges ("Best rate", "Most branches") are computed from the current results.</li>
       </UL>
 
       <H2>Providers, branches and hours</H2>
@@ -64,7 +64,7 @@ export default function Methodology() {
       </UL>
 
       <H2>Ratings and reviews</H2>
-      <P>Ratings and review texts exist only for the first eight exchange houses and are a <strong className="text-ink">pre-loaded illustrative sample, not live Google data</strong>. Every other provider shows "not loaded", which means nothing about its quality. The "Minimum rating" filter therefore hides every provider without a rating. Use the Google Maps link on each card for the real, current rating.</P>
+      <P>{SITE.name} does <strong className="text-ink">not show ratings or reviews</strong>, because it has no live, licensed source for them and will not invent any. Each provider card has a "Reviews on Google" link that opens the current ratings and reviews on Google Maps.</P>
 
       <H2>The AI assistant</H2>
       <P>Ask Xchange does not calculate anything itself. It operates the page through tools and reads back the same numbers shown above, so its figures match the page. Like any AI it can misunderstand a request or phrase something badly, so check the numbers on the page. See the <Link to="/privacy" className="font-semibold text-sky underline underline-offset-2">Privacy Policy</Link> for how chat messages are handled.</P>

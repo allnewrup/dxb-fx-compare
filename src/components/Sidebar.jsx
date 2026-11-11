@@ -3,7 +3,7 @@ import { EMIRATES } from '../data/seed.js';
 
 const RATINGS = [0, 4.0, 4.3, 4.5];
 
-export default function Sidebar({ s, set }) {
+export default function Sidebar({ s, set, hasRatings }) {
   return (
     <aside aria-label="Filters" className="panel flex flex-col gap-5 p-3 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
       <h2 className="font-display text-lg font-bold uppercase tracking-wide">Filters</h2>
@@ -17,16 +17,18 @@ export default function Sidebar({ s, set }) {
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend className="label mb-2">Minimum Google rating</legend>
-        <div className="grid grid-cols-1 gap-2">
-          {RATINGS.map((r) => (
-            <button key={r} type="button" className="key" aria-pressed={s.minRating === r} onClick={() => set({ minRating: r })}>
-              {r === 0 ? 'Any' : `${r.toFixed(1)}+ ★`}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      {hasRatings && (
+        <fieldset>
+          <legend className="label mb-2">Minimum Google rating</legend>
+          <div className="grid grid-cols-1 gap-2">
+            {RATINGS.map((r) => (
+              <button key={r} type="button" className="key" aria-pressed={s.minRating === r} onClick={() => set({ minRating: r })}>
+                {r === 0 ? 'Any' : `${r.toFixed(1)}+ ★`}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <div>
         <span className="label mb-2 block">Availability</span>
@@ -59,7 +61,7 @@ export default function Sidebar({ s, set }) {
           <option value="rate">Best rate</option>
           <option value="high">Rate: high to low</option>
           <option value="low">Rate: low to high</option>
-          <option value="rating">Top rated</option>
+          {hasRatings && <option value="rating">Top rated</option>}
           <option value="near">Closest</option>
         </select>
       </div>

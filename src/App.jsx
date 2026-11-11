@@ -129,6 +129,7 @@ export default function App() {
   const pairDaily = !!data.liveHost && (data.dailyCodes ?? []).some((c) => c === s.from || c === s.to);
   const quoteAgeMin = pairQuotedAt ? (Date.now() - pairQuotedAt.getTime()) / 60000 : 0;
   const quoteStale = !pairDaily && quoteAgeMin > 30; // daily-fix currencies are expected to be hours old
+  const hasRatings = useMemo(() => data.providers.some((p) => p.rating != null), [data.providers]); // false until real Google data is connected
   const codes = useMemo(() => Object.keys(data.mid), [data.mid]);
   // Provenance of this pair's rate: which source won and how many sources agreed on each currency.
   const pairNote = useMemo(() => pairNoteFor(data, s.from, s.to), [data.sourceInfo, s.from, s.to]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -260,7 +261,7 @@ export default function App() {
 
       <div className="mt-3 grid gap-4 lg:grid-cols-[168px_minmax(0,1fr)] xl:grid-cols-[168px_minmax(0,1fr)_minmax(0,390px)]">
         <div className="lg:sticky lg:top-4 lg:self-start">
-          <Sidebar s={s} set={set} />
+          <Sidebar s={s} set={set} hasRatings={hasRatings} />
         </div>
 
         <main className="flex min-w-0 flex-col gap-3" aria-label="Results">
@@ -283,7 +284,7 @@ export default function App() {
             </div>
             <button type="submit" className="btn btn-primary h-[42px]">Search</button>
           </form>
-          <SortTabs sort={s.sort} set={set} summary={summary} />
+          <SortTabs sort={s.sort} set={set} summary={summary} hasRatings={hasRatings} />
           {userLoc && (
             <section className="panel border-l-4 border-go p-3" aria-label="Nearest branches to you">
               <h2 className="font-display text-lg font-bold uppercase tracking-wide">Nearest to you</h2>
@@ -320,7 +321,7 @@ export default function App() {
           {sorted.length === 0 && (
             <div className="panel p-8 text-center">
               <p className="font-display text-xl font-bold uppercase">No exchange houses match</p>
-              <p className="mt-1 text-sm text-steel-600">Try a different search, or loosen the rating, open-now or emirate filters.</p>
+              <p className="mt-1 text-sm text-steel-600">Try a different search, or loosen the open-now, type or emirate filters.</p>
             </div>
           )}
           {sorted.slice(0, shown).map((r) => (
@@ -330,7 +331,7 @@ export default function App() {
               badges={badgeFor(r)}
               savings={stats ? (s.mode === 'sell' ? r.total - stats.min : stats.max - r.total) : 0}
               compared={compare.includes(r.provider.id)} compareDisabled={compare.length >= 4}
-              onCompare={toggleCompare} onMap={onMap} onReviews={onReviews}
+              onCompare={toggleCompare} onMap={onMap} onReviews={onReviews} hasRatings={hasRatings}
               onPickBranch={(pid, bid) => { setPicked((x) => ({ ...x, [pid]: bid })); setSel({ pid, bid }); }}
             />
           ))}
@@ -345,7 +346,7 @@ export default function App() {
         <div ref={panelRef} className="min-w-0 lg:col-span-2 xl:col-span-1 xl:sticky xl:top-4 xl:self-start">
           <div className="mb-2 flex gap-2" role="tablist" aria-label="Side panel">
             <button role="tab" type="button" className="key" aria-selected={panel === 'map'} onClick={() => setPanel('map')}>Map</button>
-            <button role="tab" type="button" className="key" aria-selected={panel === 'reviews'} onClick={() => setPanel('reviews')}>Google reviews</button>
+            {data.providers.some((p) => p.reviews?.length) && <button role="tab" type="button" className="key" aria-selected={panel === 'reviews'} onClick={() => setPanel('reviews')}>Google reviews</button>}
           </div>
           {panel === 'map' ? (
             <MapBoundary><Suspense fallback={<div className="panel p-5 text-sm text-steel-600">Loading map…</div>}><MapPanel pins={pins} selectedId={sel?.bid} selected={selected} onSelect={onMap} bestId={stats?.bestRate.provider.id} user={userLoc} nearIds={nearest.map((x) => x.b.id)} /></Suspense></MapBoundary>
@@ -371,11 +372,11 @@ export default function App() {
           <strong className="text-ink">Data last updated.</strong>{' '}
           Market rates: {data.updatedAt ? `${fmtTime(data.updatedAt)} UAE time` : 'not loaded yet (offline sample shown)'}
           {' · '}Branches and hours (OpenStreetMap): {new Date(__OSM_FETCHED__).toLocaleDateString('en-GB', { timeZone: 'Asia/Dubai', day: 'numeric', month: 'short', year: 'numeric' })}
-          {' · '}Ratings and reviews: illustrative sample.{' '}
+          {' · '}No ratings or reviews are shown.{' '}
           <Link to="/sources" className="font-semibold text-sky underline-offset-2 hover:underline">Details</Link>
         </p>
         <p><strong className="text-ink">About Xchange Desk.</strong> Xchange Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed. The optional Ask Xchange assistant uses Claude from Anthropic: what you type in the chat is sent to Anthropic to produce answers, and Xchange Desk does not store it.</p>
-        <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are a pre-loaded sample for the first eight exchange houses only, and are not loaded for the rest. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
+        <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are not shown; use the Google Maps link on a provider for current ones. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
         <p>© {new Date().getFullYear()} Xchange Desk · <a className="font-semibold text-sky underline-offset-2 hover:underline" href="mailto:xchangedesk@gmail.com">xchangedesk@gmail.com</a></p>
       </footer>
 

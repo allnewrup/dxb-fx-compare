@@ -4,7 +4,7 @@ export const SITE = {
   name: 'Xchange Desk',
   url: 'https://dxb-fx-compare.vercel.app',
   email: 'xchangedesk@gmail.com',
-  // Name of the person or company that runs the site, shown on About, Privacy and Terms. Leave '' to describe it as an independent project.
+  // Legal name of the person or company that runs the site, shown on About, Contact, Privacy and Terms ("run by <operator>"). Leave '' to say "an independent business".
   operator: '',
   // Date the Privacy Policy and Terms were last changed. Update it whenever you change their text.
   legalUpdated: '11 November 2026',

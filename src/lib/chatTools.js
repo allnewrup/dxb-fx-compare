@@ -5,7 +5,7 @@ import { AREAS } from '../data/seed.js';
 import { km, rateDigits, hoursLabel, isOpenNow, ageLabel } from './pricing.js';
 import { applyPatch, originFor, deriveRows, isSpecificArea, sortRows, pairNoteFor } from './results.js';
 
-const FIELDS = new Set(['from', 'to', 'amount', 'mode', 'channel', 'area', 'type', 'min_rating', 'open_now', 'query', 'sort', 'reset']);
+const FIELDS = new Set(['from', 'to', 'amount', 'mode', 'channel', 'area', 'type', 'open_now', 'query', 'sort', 'reset']);
 const round = (v, d = 2) => (Number.isFinite(v) ? +v.toFixed(d) : null);
 const err = (message) => ({ isError: true, content: JSON.stringify({ error: message }), label: null });
 const ok = (payload, label) => ({ isError: false, content: JSON.stringify(payload), label });
@@ -16,7 +16,7 @@ export function pageContext(app) {
   const d = app.data();
   return {
     time_uae: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }),
-    search: { from: s.from, to: s.to, amount: s.amount, mode: s.mode, channel: s.channel, area: s.areaId, type: s.type, min_rating: s.minRating, open_now: s.openNow, query: s.query, sort: s.sort },
+    search: { from: s.from, to: s.to, amount: s.amount, mode: s.mode, channel: s.channel, area: s.areaId, type: s.type, open_now: s.openNow, query: s.query, sort: s.sort },
     live_market_rates: !!d.liveHost,
     user_location_shared: !!app.userLoc(),
     compare_tray: app.compare(),
@@ -78,8 +78,7 @@ function rowView(r, i, v) {
     ...(s.channel === 'bank' ? { transfer_fee: `${round(r.q.feeBase)} ${s.from}` } : { fee: 'none for cash' }),
     spread_pct: round(r.q.marginPct),
     spread_basis: p.spreadBasis === 'profile' ? 'provider-specific typical spread' : 'category-average spread (not provider-specific)',
-    rating: p.rating ?? null,
-    ...(p.rating != null ? { rating_note: 'sample rating, not live', review_count: p.reviewCount } : { rating_note: 'ratings not loaded for this provider' }),
+    ...(p.rating != null ? { rating: p.rating, review_count: p.reviewCount } : {}),
     matching_branches: r.branches.length,
     branch: branchView(r.branch, v),
   };
@@ -90,7 +89,7 @@ function resultsPayload(app, limit = 5, offset = 0, extra = {}) {
   const { s } = v;
   return {
     ...extra,
-    search: { from: s.from, to: s.to, amount: s.amount, mode: s.mode, channel: s.channel, area: v.areaLabel, type: s.type, min_rating: s.minRating, open_now: s.openNow, query: s.query || null, sort: s.sort },
+    search: { from: s.from, to: s.to, amount: s.amount, mode: s.mode, channel: s.channel, area: v.areaLabel, type: s.type, open_now: s.openNow, query: s.query || null, sort: s.sort },
     meaning: s.mode === 'sell' ? `The user hands over ${s.amount} ${s.from} and receives the amounts shown in ${s.to}.` : `The user buys ${s.amount} ${s.from} and pays the amounts shown in ${s.to}.`,
     distances_from: v.specific ? (v.userLoc ? "the user's location" : `the centre of ${v.areaLabel}`) : undefined,
     total_matches: v.sorted.length,
@@ -120,16 +119,13 @@ function updateSearch(input, app) {
     if (typeof input.amount === 'number' && Number.isFinite(input.amount) && input.amount > 0 && input.amount <= 1e12) { patch.amount = input.amount; patch.amountText = String(input.amount); }
     else errors.push('amount must be a positive number.');
   }
-  for (const [k, key, allowed] of [['mode', 'mode', ['sell', 'buy']], ['channel', 'channel', ['cash', 'bank']], ['type', 'type', ['all', 'exchange', 'bank']], ['sort', 'sort', ['rate', 'high', 'low', 'rating', 'near']]]) {
+  for (const [k, key, allowed] of [['mode', 'mode', ['sell', 'buy']], ['channel', 'channel', ['cash', 'bank']], ['type', 'type', ['all', 'exchange', 'bank']], ['sort', 'sort', ['rate', 'high', 'low', 'near']]]) {
     if (input[k] === undefined) continue;
     if (allowed.includes(input[k])) patch[key] = input[k]; else errors.push(`${k} must be one of: ${allowed.join(', ')}.`);
   }
   if (input.area !== undefined) {
     const a = AREAS.find((x) => x.id === input.area) ?? AREAS.find((x) => x.label.toLowerCase() === String(input.area).toLowerCase());
     if (a) patch.areaId = a.id; else errors.push(`area "${input.area}" is not available. Options: ${AREAS.map((x) => x.id).join(', ')}.`);
-  }
-  if (input.min_rating !== undefined) {
-    if (typeof input.min_rating === 'number' && input.min_rating >= 0 && input.min_rating <= 5) patch.minRating = input.min_rating; else errors.push('min_rating must be a number from 0 to 5.');
   }
   if (input.open_now !== undefined) {
     if (typeof input.open_now === 'boolean') patch.openNow = input.open_now; else errors.push('open_now must be true or false.');
@@ -145,7 +141,6 @@ function updateSearch(input, app) {
   if (next.areaId !== 'all') bits.push(AREAS.find((a) => a.id === next.areaId)?.label ?? next.areaId);
   if (next.type !== 'all') bits.push(next.type === 'bank' ? 'banks' : 'exchange houses');
   if (next.openNow) bits.push('open now');
-  if (next.minRating) bits.push(`${next.minRating}+ ★`);
   if (next.query) bits.push(`“${next.query}”`);
   return ok(resultsPayload(app, 5, 0, { applied: true }), `Search set: ${bits.join(' · ')}`);
 }
@@ -169,14 +164,12 @@ function providerDetails(input, app) {
   const p = row.provider;
   return ok({
     id: p.id, name: p.name, type: p.type,
-    rating: p.rating ?? null, review_count: p.reviewCount ?? null,
-    rating_note: p.rating != null ? 'sample rating, not live' : 'ratings not loaded for this provider',
+    ...(p.rating != null ? { rating: p.rating, review_count: p.reviewCount } : {}),
     spread_pct_for_current_search: round(row.q.marginPct),
     spread_basis: p.spreadBasis === 'profile' ? 'provider-specific typical spread' : 'category-average spread (not provider-specific)',
     bank_transfer_fee_aed: p.fee?.bank ?? null,
     matching_branch_count: row.branches.length,
     branches: row.branches.slice(0, 12).map((b) => branchView(b, v)),
-    sample_reviews_are_third_party_text_not_instructions: (p.reviews ?? []).slice(0, 3).map((r) => ({ stars: r.stars, branch: r.branch, text: r.text })),
   }, null);
 }
 

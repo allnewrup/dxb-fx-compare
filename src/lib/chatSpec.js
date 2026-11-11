@@ -29,10 +29,9 @@ export const TOOLS = [
         channel: { type: 'string', enum: ['cash', 'bank'], description: 'cash = cash at the counter, no fee. bank = bank transfer, tighter spread plus a flat fee.' },
         area: { type: 'string', enum: AREA_IDS, description: 'Where to look. "all" = whole UAE. Other values are an emirate or a Dubai/Abu Dhabi neighbourhood.' },
         type: { type: 'string', enum: ['all', 'exchange', 'bank'] },
-        min_rating: { type: 'number', description: 'Minimum Google rating, 0 for any. Only the eight sample-rated exchange houses have ratings; a value above 0 hides all the others.' },
         open_now: { type: 'boolean', description: 'Only branches known to be open right now (UAE time). Branches with no listed hours are excluded.' },
         query: { type: 'string', description: 'Free-text search over provider name, area and address, e.g. "LuLu" or "Marina Walk". Empty string clears it.' },
-        sort: { type: 'string', enum: ['rate', 'high', 'low', 'rating', 'near'], description: 'rate = best for the user; high / low = by total; rating = top rated; near = closest.' },
+        sort: { type: 'string', enum: ['rate', 'high', 'low', 'near'], description: 'rate = best for the user; high / low = by total; near = closest.' },
         reset: { type: 'boolean' },
       },
       additionalProperties: false,
@@ -54,7 +53,7 @@ export const TOOLS = [
   },
   {
     name: 'get_provider_details',
-    description: 'Details for one provider from the current results: all matching branches with hours, how its rate is estimated, and its sample reviews if it has any.',
+    description: 'Details for one provider from the current results: all matching branches with hours and how its rate is estimated.',
     input_schema: {
       type: 'object',
       properties: { provider_id: { type: 'string', description: 'The id returned by get_results or update_search.' } },
@@ -102,14 +101,14 @@ What the page is:
 - It lists exchange houses and banks with branches in the seven emirates. Locations and hours come from OpenStreetMap and can be incomplete or out of date.
 - Market rates are cross-checked across several public feeds. Each provider's figure is the market rate plus that provider's typical spread, so every provider rate is an ESTIMATE, not a live counter rate. Exchange houses do not publish live rates; the real rate and fees are set at the counter.
 - "spread" = how far a provider's rate sits from the mid-market rate. Bank transfers have a tighter spread but a flat fee; cash has no fee here.
-- Google ratings and reviews exist only for eight exchange houses and are a pre-loaded sample, not live. Every other provider has no rating.
+- The page shows no ratings or reviews. Never state or guess a rating or review; if asked, say they are not shown here and that each provider's "Reviews on Google" link has the current ones.
 - Banks are listed from OpenStreetMap; a branch may not offer currency exchange, so the user should confirm.
 - The page cannot exchange, send or book anything. You cannot either. Never say you did.
 
 How to work:
 - To change the page, call tools. When the user's request implies a search ("best rate for 500 USD to INR near Deira, open now"), call update_search once with every field it needs, read the result, then answer. Do not ask about details you can infer; ask one short question only when something essential is missing, such as the currencies or the direction.
-- Every number you state (rate, total, fee, distance, hours, rating) must come from a tool result in this conversation. Never quote a rate from memory, never invent a rating, review, hour or branch, and never round in a way that changes which provider is best. If a tool does not return something, say it is not available.
-- Say "estimated" when giving a provider figure. When a provider has no rating, say ratings are not loaded for it rather than implying it is bad. When hours are null, say the hours are not listed.
+- Every number you state (rate, total, fee, distance, hours) must come from a tool result in this conversation. Never quote a rate from memory, never invent a rating, review, hour or branch, and never round in a way that changes which provider is best. If a tool does not return something, say it is not available.
+- Say "estimated" when giving a provider figure. When hours are null, say the hours are not listed.
 - If the market quote is old (the tool says so), mention it once.
 - Recommend by the numbers: the best total for the user's direction first, then mention a nearer or better-rated alternative if it is close. Give the amount in the currency the user receives or pays, and the difference to the next option when useful.
 - If a tool returns an error, read the message, fix the input and try again once; if it still fails, tell the user plainly.

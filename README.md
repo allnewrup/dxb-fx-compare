@@ -2,7 +2,7 @@
 
 **Compare money exchange rates across Dubai and Abu Dhabi, side by side.**
 
-Xchange Desk is a React single-page app that lines up UAE exchange houses and banks (127 providers and about 890 branches across all seven emirates, including Al Ansari, Al Fardan, LuLu, UAE Exchange, Orient, Travelex, Emirates NBD and FAB) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and a reviews drawer. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
+Xchange Desk is a React single-page app that lines up UAE exchange houses and banks (127 providers and about 890 branches across all seven emirates, including Al Ansari, Al Fardan, LuLu, UAE Exchange, Orient, Travelex, Emirates NBD and FAB) the way Skyscanner lines up flights: one search bar, quick filters, sortable result cards, a map and an AI assistant. The interface is skeuomorphic, with recessed input wells, raised metal buttons, slide switches and split-flap rate boards.
 
 ![Xchange Desk screenshot](docs/screenshot.png)
 
@@ -40,18 +40,18 @@ Xchange Desk is a React single-page app that lines up UAE exchange houses and ba
 ### Results
 - **Three quick-sort tabs** in the Skyscanner style: *Best Rate*, *Highest Rated*, *Closest / Most Branches*. Each tab shows its current winner as a summary line.
   - *Closest* ranks by distance from the selected neighbourhood. With a whole-emirate filter it ranks by branch count.
-- **Provider cards** show the logo plate, Google rating and review count, the nearest matching branch, an open/closed pill (UAE time), branch chips to switch branch, a split-flap board with estimated *Sell* and *Buy* rates, the converted total, fee, savings against the worst offer, the cost versus the mid-market rate, and the age of the market quote.
+- **Provider cards** show the logo plate, the nearest matching branch, an open/closed pill (UAE time), branch chips to switch branch, a split-flap board with estimated *Sell* and *Buy* rates, the converted total, fee, savings against the worst offer, the cost versus the mid-market rate, and the age of the market quote.
 - **Metal badges** mark *Best rate* (gold), *Top rated* (steel) and *Most branches* (copper).
 - **Side-by-side tray**: tick "Compare side-by-side" on 2 to 4 cards and a pinned multi-column table opens. The best value in each row is highlighted.
-- **Left sidebar filters**: minimum Google rating, open now, emirate checkboxes, sort order, reset.
+- **Left sidebar filters**: open now, emirate checkboxes, sort order, reset.
 
-### Map and reviews
+### Map
 - **Rate pins map** is a real vector map (MapLibre on OpenFreeMap tiles). Every filtered branch is a tag carrying the provider mark and the rate for your transaction, and the tag's pointer sits exactly on the branch coordinate. Tags that would overlap group into a count circle; click it to zoom in.
 - **Map language**: English, Arabic, Bengali, Tamil, Malayalam, Hindi or Urdu (remembered in the browser, and defaulted from the browser language), plus a "Standard map" option with street names in the local language. The base map has all of its own text removed and the app draws city, town and district labels itself, so every script renders correctly. Names come only from OpenStreetMap `name:xx` tags and Wikidata labels (built by `node scripts/build-map-places.mjs`); nothing is machine-translated. A place with no name in the chosen language is shown in English, and the panel says how many places have one (English 1,041, Arabic 974, Malayalam 254, Urdu 82, Bengali 22, Hindi 16, Tamil 14, out of 1,048). The Google Maps embed follows the same language.
 - **Use my location** (browser geolocation) marks you on the map, features the three nearest branches with straight-line distances, shows a distance on each card and re-ranks the "Closest" sort.
 - **Google Maps button** opens an embed of the selected branch in place, and minimizes back into a button.
 - **Get directions** on every branch deep-links to Google Maps navigation.
-- **Reviews drawer** shows aggregate rating, star ratings, reviewer, branch visited and relative time, filterable by branch.
+- **No ratings or reviews are shown.** There is no live, licensed source for them and none are invented. Each card links to the provider's reviews on Google Maps. The rating filter, "Top rated" sort, rating row and reviews drawer are kept in the code and switch on automatically once a provider has a real rating (see *Connecting real Google data*).
 
 ### Ask Xchange (AI assistant)
 
@@ -59,7 +59,7 @@ A floating **Ask Xchange** button opens a chat panel. The assistant can answer q
 
 - **Model:** Claude Haiku 5.5 (`claude-haiku-5-5`), thinking off, 1,024 output tokens per reply. Change it in `src/lib/chatSpec.js`.
 - **Tools** run in the browser, on the same state and calculation code the page uses: `update_search`, `get_results`, `get_provider_details`, `compare_providers`, `show_on_map`, `find_nearest`. Tool inputs are validated before anything changes; bad input is returned to the model as an error and changes nothing.
-- **No invented numbers:** every figure the assistant quotes comes from a tool result. Provider rates stay labelled as estimates, sample ratings as sample, and missing hours as "not listed".
+- **No invented numbers:** every figure the assistant quotes comes from a tool result. Provider rates stay labelled as estimates, it never states a rating or review, and missing hours as "not listed".
 - **Privacy:** the conversation is sent to Anthropic to produce answers. The server keeps no chat log, and the browser keeps the chat only in `sessionStorage` for the tab. Coordinates are never sent; the model only sees distances.
 
 ### Information pages
@@ -100,8 +100,7 @@ Be clear about this before relying on any number.
 | --- | --- | --- |
 | **Market (mid) FX rate** | Four independent feeds, cross-checked: Yahoo Finance FX spot (minute-level, major currencies), ECB via Frankfurter (daily, ~30 currencies), `open.er-api.com` (daily, ~160) and fawazahmed0 currency-api (daily, 300+) | **Live where possible.** For each currency a quote is discarded unless another source corroborates it (within 0.25% plus an allowance for market movement between quote times), then the freshest surviving quote wins. The UI shows the source, the quote age and how many sources agreed. Daily-only currencies are labelled "daily reference rate". |
 | **Provider rates** (Sell / Buy) | Market rate plus a modelled per-provider spread | **Estimated.** None of the exchange houses offers a public rates API, and their sites load rates through private services, so genuine counter rates can't be collected legitimately. |
-| Provider ratings and review counts | `src/data/seed.js` | **Sample snapshot**, replaceable with Google Places data. |
-| Reviews | `src/data/seed.js` | **Sample text written for this project**, not copied from Google. Labelled as such in the UI. |
+| Provider ratings, review counts and reviews | none | **Not shown.** Empty until Google Places data is connected. |
 | Branch coordinates | `src/data/seed.js` | **Approximate** positions per neighbourhood. |
 | Opening hours | `src/data/seed.js` | Sample hours, evaluated against UAE time (Asia/Dubai). |
 
@@ -167,7 +166,7 @@ dxb-fx-compare/
     ├── pages/                    About, Methodology, Sources, Contact, Privacy, Terms (+ PageShell)
     ├── data/
     │   ├── site.js               Contact email, operator name, policy date, page list
-    │   └── seed.js               Currencies, areas, providers, branches, sample reviews, offline rates
+    │   └── seed.js               Currencies, areas, spread models, offline rates
     ├── services/
     │   └── fxDataService.js      Data adapter: getSnapshot, refreshLiveRates, enrichFromGoogle
     ├── lib/
@@ -178,7 +177,7 @@ dxb-fx-compare/
     │   └── chatClient.js         Streams /api/chat and runs the tool loop
     └── components/
         ├── SearchConsole.jsx     Pair, amount, switches, area, refresh
-        ├── Sidebar.jsx           Rating, open now, emirate, sort
+        ├── Sidebar.jsx           Open now, emirate, sort (rating filter when ratings exist)
         ├── SortTabs.jsx          Best Rate / Highest Rated / Closest tabs
         ├── ProviderCard.jsx      Result card with rate board
         ├── MapPanel.jsx          MapLibre rate-pin map with language picker, location marker and Google Maps button
@@ -195,7 +194,7 @@ dxb-fx-compare/
 `fxDataService` is the only module that knows where data comes from. Components never call `fetch`.
 
 ```js
-getSnapshot()          // offline-safe seed: providers, branches, reviews, mid rates
+getSnapshot()          // offline-safe seed: providers, branches, mid rates
 refreshLiveRates()     // → { mid, quoteTimes, sourceInfo, dailyCodes, updatedAt, host }  four feeds, cross-checked
 enrichFromGoogle(list) // → { providers, enriched }  no-op until VITE_PLACES_PROXY is set
 ```
@@ -206,7 +205,7 @@ enrichFromGoogle(list) // → { providers, enriched }  no-op until VITE_PLACES_P
 
 | Setting | Where | Purpose |
 | --- | --- | --- |
-| `VITE_PLACES_PROXY` | `.env` | URL of your Google Places proxy. Leave empty to use the sample ratings and reviews. |
+| `VITE_PLACES_PROXY` | `.env` | URL of your Google Places proxy. Leave empty and no ratings or reviews are shown. |
 | `ANTHROPIC_API_KEY` | `.env.local` (dev) / `vercel env add ANTHROPIC_API_KEY` (production) | Turns the assistant on. Server-side only: never prefix it with `VITE_`. Without it the chat shows "not switched on yet" and nothing else changes. |
 | `CHAT_REQUESTS_PER_10_MIN`, `CHAT_DAILY_CAP` | environment | Best-effort limits per visitor and per day (defaults 40 and 4,000). They are per server instance; the hard ceiling is the monthly spend limit you set in the Anthropic Console. |
 | `APP_DOWNLOAD_URL` | `src/components/QrBadge.jsx` | The link encoded in the QR code. **It is a placeholder (`https://example.com/get-xchange-desk`). Replace it with your real app smart link before sharing the app.** |
@@ -239,7 +238,7 @@ The browser must never hold a Google API key, so the app expects a small server 
 
 3. Set `VITE_PLACES_PROXY=https://your-host/api/places` in `.env`.
 
-When enrichment succeeds, the sample-review notice disappears and the reviews are marked as coming from Google. Follow Google's terms for displaying and attributing reviews, and its caching limits. For exact branch coordinates, extend the same route to return each branch's `location` and merge it into `branches`.
+When enrichment succeeds, ratings, the rating filter, "Top rated" sort and the reviews drawer appear, marked as coming from Google. Follow Google's terms for displaying and attributing reviews, and its caching limits. For exact branch coordinates, extend the same route to return each branch's `location` and merge it into `branches`.
 
 ---
 
@@ -271,7 +270,7 @@ For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo
 
 ## Customising
 
-**Add a provider.** Append an object to `PROVIDERS` in `src/data/seed.js` with `id`, `name`, `mark` (two letters), `hue`, `rating`, `reviewCount`, `margin`, `fee`, `bias`, `branches` and `reviews`. Use the `branch()` helper for branches.
+**Add a provider.** Append an object to `PROVIDERS` in `src/data/seed.js` with `id`, `name`, `mark` (two letters), `hue`, `margin`, `fee`, `bias` and `branches` (set `rating`, `reviewCount` and `reviews` only from real data). Use the `branch()` helper for branches.
 
 **Add a currency.** Every currency the daily feeds carry (about 160) appears automatically. To give one a minute-level live quote, add it to `CURRENCIES` and `SEED_MID_PER_AED` in `seed.js`; Yahoo must offer a `USD<code>=X` symbol for it.
 
@@ -294,7 +293,7 @@ For heavier traffic, cache each symbol for 30 to 60 seconds on the server. Yahoo
 ## Known limitations
 
 - Provider rates are modelled, not scraped. The market rate is accurate, the counter rate is an estimate.
-- Ratings, reviews, hours and branch pins are sample data until the Places proxy is connected.
+- Ratings and reviews are not shown until the Places proxy is connected. Hours and branch pins come from OpenStreetMap and can be out of date.
 - The Yahoo endpoint is unofficial. It can change or block requests without notice.
 - Branch coordinates are placeholders (area centre plus a small offset) until the Places proxy supplies real ones, so "nearest" is only as accurate as that data.
 - The Google Maps button embeds one branch at a time. A multi-pin Google map would need the Maps JavaScript API and a key.
@@ -321,7 +320,7 @@ The provider list is built from **OpenStreetMap** (© OpenStreetMap contributors
 
 - Exchange houses: every named brand is included (95). Unnamed bureaus are skipped.
 - Banks: only brands with 3 or more branches (32), and OpenStreetMap does not say whether a given branch exchanges currency, so confirm before you go.
-- The first eight exchange houses keep their hand-written spread profiles, sample ratings and sample reviews. Every other provider has **no rating or reviews** (none are invented) and uses one **category-average spread**, so their rates are identical until real rates are available.
+- The first eight exchange houses keep their hand-written spread profiles. Every provider has **no rating or reviews** (none are invented), and every other provider uses one **category-average spread**, so their rates are identical until real rates are available.
 - OpenStreetMap coverage is incomplete and can be out of date, and branch emirates are taken from the official boundaries (Abu Dhabi is "everything else").
 
 ## Disclaimer

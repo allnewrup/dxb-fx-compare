@@ -21,7 +21,7 @@ export default function Terms() {
       <UL>
         <li>Provider rates shown are <strong className="text-ink">estimates</strong> calculated from market rates and modelled spreads, as explained in the <L to="/methodology">methodology</L>. They are not quotes, offers or guarantees, and no provider is bound to them.</li>
         <li>Actual rates, fees, limits, opening hours and availability are set by each provider and can differ from what you see here, and can change at any time. <strong className="text-ink">Confirm the final rate and all fees with the provider before you transact.</strong></li>
-        <li>Branch data, hours and map details come from third parties such as OpenStreetMap and can be incomplete or out of date. Ratings and reviews for the first eight exchange houses are an illustrative sample.</li>
+        <li>Branch data, hours and map details come from third parties such as OpenStreetMap and can be incomplete or out of date.</li>
       </UL>
 
       <H2>4. The AI assistant</H2>

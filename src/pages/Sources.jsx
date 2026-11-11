@@ -66,7 +66,7 @@ export default function Sources({ data }) {
       <P>Branch data is a snapshot, refreshed when we rebuild it, not a live feed. A branch may have opened, closed, moved or changed its hours since. Banks are listed only for brands with three or more branches.</P>
 
       <H2>Ratings and reviews</H2>
-      <Note>Ratings and review texts for the first eight exchange houses are a <strong>pre-loaded illustrative sample, not live Google data</strong>. All other providers have no rating. For current ratings use the Google Maps link on each card.</Note>
+      <P>None are shown. {SITE.name} has no live source for them and does not invent any. Use the "Reviews on Google" link on a provider for current ratings and reviews.</P>
 
       <H2>Provider spreads and fees</H2>
       <P>Provider spreads and bank-transfer fees are modelled by {SITE.name}, not collected from the providers; see "Where the spreads come from" in the <Link to="/methodology" className="font-semibold text-sky underline underline-offset-2">methodology</Link>.</P>

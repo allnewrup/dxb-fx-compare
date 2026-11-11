@@ -1,13 +1,13 @@
 import React from 'react';
 
-export default function SortTabs({ sort, set, summary }) {
+export default function SortTabs({ sort, set, summary, hasRatings }) {
   const tabs = [
     { id: 'rate', label: 'Best Rate', ...summary.rate },
-    { id: 'rating', label: 'Highest Rated', ...summary.rating },
+    ...(hasRatings ? [{ id: 'rating', label: 'Highest Rated', ...summary.rating }] : []),
     { id: 'near', label: 'Closest / Most Branches', ...summary.near },
   ];
   return (
-    <div role="tablist" aria-label="Sort results" className="panel grid grid-cols-1 gap-2 p-2 sm:grid-cols-3">
+    <div role="tablist" aria-label="Sort results" className={`panel grid grid-cols-1 gap-2 p-2 ${tabs.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
       {tabs.map((t) => (
         <button
           key={t.id} role="tab" type="button" aria-selected={sort === t.id} onClick={() => set({ sort: t.id })}

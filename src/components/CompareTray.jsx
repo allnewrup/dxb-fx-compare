@@ -13,7 +13,9 @@ export default function CompareTray({ rows, s, onRemove, onClear }) {
     ['Rate board', (r) => <span className="font-mono">{rate(r).toFixed(rateDigits(rate(r)))}</span>],
     [verb, (r) => <strong className={`font-mono ${r.total === bestTotal ? 'text-go' : ''}`}>{fmtNum(r.total)} {s.to}{r.total === bestTotal ? ' ✓' : ''}</strong>],
     ['Fee', (r) => (s.channel === 'bank' ? `${s.from} ${fmtNum(r.q.feeBase)}` : 'None (cash)')],
-    ['Google rating', (r) => r.provider.rating == null ? <span className="text-steel-500">Not loaded</span> : <span className={r.provider.rating === bestRating ? 'font-semibold text-go' : ''}>{r.provider.rating.toFixed(1)} ★ · {r.provider.reviewCount.toLocaleString('en-AE')}</span>],
+    ...(rows.some((r) => r.provider.rating != null) ? [
+      ['Google rating', (r) => r.provider.rating == null ? <span className="text-steel-500">Not loaded</span> : <span className={r.provider.rating === bestRating ? 'font-semibold text-go' : ''}>{r.provider.rating.toFixed(1)} ★ · {r.provider.reviewCount.toLocaleString('en-AE')}</span>],
+    ] : []),
     ['Branches', (r) => `${r.branches.length} in view`],
     ['Nearest branch', (r) => `${r.branch.area}, ${r.branch.emirate}`],
     ['Hours', (r) => hoursLabel(r.branch)],
