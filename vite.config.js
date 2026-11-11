@@ -1,5 +1,14 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
+
+// Dates baked into the build so the Sources page can show when each static dataset was extracted.
+const fetchedAt = (f) => JSON.parse(readFileSync(new URL(`./src/data/${f}`, import.meta.url), 'utf8')).fetchedAt;
+const define = {
+  __OSM_FETCHED__: JSON.stringify(fetchedAt('osm-uae.json')),
+  __PLACES_FETCHED__: JSON.stringify(fetchedAt('map-places.json')),
+  __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+};
 
 // Browsers can't call Yahoo Finance directly (no CORS headers, needs a User-Agent),
 // so the dev and preview servers forward /api/yahoo/* to it. A production deploy needs
@@ -37,4 +46,4 @@ const chatApi = () => ({
   },
 });
 
-export default defineConfig({ plugins: [react(), chatApi()], server: { proxy: yahoo }, preview: { proxy: yahoo } });
+export default defineConfig({ define, plugins: [react(), chatApi()], server: { proxy: yahoo }, preview: { proxy: yahoo } });

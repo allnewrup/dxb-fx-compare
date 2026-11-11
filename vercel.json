@@ -1,4 +1,17 @@
 {
-  "rewrites": [{ "source": "/api/yahoo/:path*", "destination": "/api/yahoo?path=:path*" }],
-  "functions": { "api/chat.js": { "maxDuration": 30 } }
+  "rewrites": [
+    {
+      "source": "/api/yahoo/:path*",
+      "destination": "/api/yahoo?path=:path*"
+    },
+    {
+      "source": "/(about|methodology|sources|contact|privacy|terms)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 30
+    }
+  }
 }

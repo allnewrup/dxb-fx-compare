@@ -170,10 +170,15 @@ export async function refreshLiveRates() {
     sourceInfo[code] = info[code];
     if (SRC[info[code].source].kind === 'daily') daily.push(code);
   }
+  const ids = ['yahoo', 'ecb', 'erapi', 'fawaz']; // same order as the Promise.allSettled call above
+  const sourceStatus = settled.map((s, i) => ({
+    id: ids[i], label: SRC[ids[i]].label, kind: SRC[ids[i]].kind, ok: s.status === 'fulfilled',
+    asOf: s.status === 'fulfilled' ? (s.value.times.AED ?? s.value.times.USD ?? null) : null, // when the source published its AED quote
+  }));
   const used = results.map((r) => SRC[r.id].label);
   const quotedAt = new Date(Math.min(...['USD', 'EUR', 'GBP', 'INR'].filter((c) => quoteTimes[c]).map((c) => quoteTimes[c].getTime())));
   return {
-    mid, quoteTimes, sourceInfo, dailyCodes: daily, updatedAt: new Date(), quotedAt,
+    mid, quoteTimes, sourceInfo, sourceStatus, dailyCodes: daily, updatedAt: new Date(), quotedAt,
     host: used.join(', '), sourcesUsed: used, sourcesTried: SOURCES.length,
   };
 }

@@ -62,6 +62,10 @@ A floating **Ask Xchange** button opens a chat panel. The assistant can answer q
 - **No invented numbers:** every figure the assistant quotes comes from a tool result. Provider rates stay labelled as estimates, sample ratings as sample, and missing hours as "not listed".
 - **Privacy:** the conversation is sent to Anthropic to produce answers. The server keeps no chat log, and the browser keeps the chat only in `sessionStorage` for the tab. Coordinates are never sent; the model only sees distances.
 
+### Information pages
+
+About, Methodology, Data sources (with live per-source update times), Contact, Privacy Policy and Terms of Service live at `/about`, `/methodology`, `/sources`, `/contact`, `/privacy` and `/terms`. They are lazy-loaded React pages behind a small History-API router (`src/lib/router.jsx`), with a rewrite in `vercel.json` so each path can be opened or shared directly. The app stays mounted while one is open, so filters, chat and map survive a visit. Business details (contact email, operator name, policy date) are in `src/data/site.js`. The footer shows when market rates and branch data were last updated.
+
 ### Mobile app QR code
 A header badge shows a mini QR code. Clicking it opens a full-screen modal with a large scannable code ("Scan to download for iOS & Android").
 
@@ -160,7 +164,9 @@ dxb-fx-compare/
     ├── App.jsx                   State, filtering, sorting, layout
     ├── index.css                 Tailwind layers and component classes
     │                             (.panel, .well, .btn, .key, .switch, .board, .flip-digit, badges)
+    ├── pages/                    About, Methodology, Sources, Contact, Privacy, Terms (+ PageShell)
     ├── data/
+    │   ├── site.js               Contact email, operator name, policy date, page list
     │   └── seed.js               Currencies, areas, providers, branches, sample reviews, offline rates
     ├── services/
     │   └── fxDataService.js      Data adapter: getSnapshot, refreshLiveRates, enrichFromGoogle

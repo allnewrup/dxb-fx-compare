@@ -12,6 +12,18 @@ import ReviewsDrawer from './components/ReviewsDrawer.jsx';
 import CompareTray from './components/CompareTray.jsx';
 import { QrBadge, QrModal } from './components/QrBadge.jsx';
 import ChatLauncher from './components/ChatLauncher.jsx';
+import { useRoute, Link } from './lib/router.jsx';
+import { SiteNav } from './pages/PageShell.jsx';
+
+// Information pages load only when visited.
+const PAGE_VIEWS = {
+  '/about': lazy(() => import('./pages/About.jsx')),
+  '/methodology': lazy(() => import('./pages/Methodology.jsx')),
+  '/sources': lazy(() => import('./pages/Sources.jsx')),
+  '/contact': lazy(() => import('./pages/Contact.jsx')),
+  '/privacy': lazy(() => import('./pages/Privacy.jsx')),
+  '/terms': lazy(() => import('./pages/Terms.jsx')),
+};
 
 /** If the lazily loaded map chunk fails (offline, blocked), show a message instead of a blank page. */
 class MapBoundary extends React.Component {
@@ -31,6 +43,8 @@ const BADGE = {
 };
 
 export default function App() {
+  const route = useRoute();
+  const PageView = PAGE_VIEWS[route];
   const [data, setData] = useState(getSnapshot);
   const [s, setS] = useState(() => {
     const home = guessHomeCurrency(); // visitors start as "foreign cash -> AED"; UAE locales keep AED -> INR
@@ -89,7 +103,7 @@ export default function App() {
     try {
       const live = await refreshLiveRates();
       const enriched = await enrichFromGoogle(providersRef.current);
-      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, quoteTimes: live.quoteTimes, dailyCodes: live.dailyCodes ?? [], sourceInfo: live.sourceInfo, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
+      setData((d) => ({ ...d, providers: enriched.providers, mid: live.mid, updatedAt: live.updatedAt, quotedAt: live.quotedAt, quoteTimes: live.quoteTimes, dailyCodes: live.dailyCodes ?? [], sourceInfo: live.sourceInfo, sourceStatus: live.sourceStatus, liveHost: live.host, source: { ...d.source, rates: live.host, places: enriched.enriched ? 'google' : 'seed' } }));
       setStatus({ tone: 'ok', text: `Market rates cross-checked across ${live.sourcesUsed?.length ?? 1} of ${live.sourcesTried ?? 1} sources (${live.host}), fetched ${fmtTime(live.updatedAt)} UAE time.` });
     } catch (e) {
       setStatus({ tone: 'err', text: silent ? `${e.message} Retrying every minute.` : e.message });
@@ -197,7 +211,10 @@ export default function App() {
   const toneCls = { info: 'text-steel-600', ok: 'text-go', err: 'text-[#a3261b]' }[status.tone];
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 pb-10 pt-4 sm:px-6" style={{ paddingBottom: compareRows.length >= 2 ? '22rem' : '2.5rem' }}>
+    <>
+    {PageView && <Suspense fallback={<p className="p-6 text-sm text-steel-600" role="status">Loading…</p>}><PageView data={data} /></Suspense>}
+    {/* The app stays mounted (hidden) while an information page is open, so filters, chat and map survive a visit to it. */}
+    <div hidden={!!PageView} className="mx-auto max-w-[1400px] px-4 pb-10 pt-4 sm:px-6" style={{ paddingBottom: compareRows.length >= 2 ? '22rem' : '2.5rem' }}>
       {/* Header */}
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -238,7 +255,7 @@ export default function App() {
       )}
 
       <div className="mt-2 rounded-lg border border-steel-300 bg-white/60 px-3 py-2 text-sm text-steel-600">
-        <strong className="text-ink">These are estimates, not counter rates.</strong> Each provider's figure is the market rate plus that provider's typical spread. Exchange houses don't publish live rates, so the final rate and fees are set at the counter.
+        <strong className="text-ink">These are estimates, not counter rates.</strong> Each provider's figure is the market rate plus that provider's typical spread. Exchange houses don't publish live rates, so the final rate and fees are set at the counter. <Link to="/methodology" className="font-semibold text-sky underline underline-offset-2">How we calculate</Link> · <Link to="/sources" className="font-semibold text-sky underline underline-offset-2">Data sources</Link>
       </div>
 
       <div className="mt-3 grid gap-4 lg:grid-cols-[168px_minmax(0,1fr)] xl:grid-cols-[168px_minmax(0,1fr)_minmax(0,390px)]">
@@ -344,18 +361,28 @@ export default function App() {
           <li><strong className="text-ink">Photo ID.</strong> Exchange houses in the UAE ask for your passport (visitors) or Emirates ID (residents) for every transaction.</li>
           <li><strong className="text-ink">Cash vs. card.</strong> Cash gets the board rate with no fee here; bank transfers add a flat fee but a tighter spread. Some branches take cards, so ask first.</li>
           <li><strong className="text-ink">Limits.</strong> Larger amounts can trigger extra ID or source-of-funds checks. Ask the branch before you travel with a large sum.</li>
-          <li><strong className="text-ink">Opening hours.</strong> The hours shown are typical sample hours, so confirm them with Google Maps or the branch.</li>
+          <li><strong className="text-ink">Opening hours.</strong> Hours come from OpenStreetMap where a branch lists them and can be out of date, so confirm them with Google Maps or the branch.</li>
         </ul>
       </section>
 
       <footer className="mt-6 space-y-2 text-xs leading-relaxed text-steel-600">
+        <SiteNav current="/" />
+        <p>
+          <strong className="text-ink">Data last updated.</strong>{' '}
+          Market rates: {data.updatedAt ? `${fmtTime(data.updatedAt)} UAE time` : 'not loaded yet (offline sample shown)'}
+          {' · '}Branches and hours (OpenStreetMap): {new Date(__OSM_FETCHED__).toLocaleDateString('en-GB', { timeZone: 'Asia/Dubai', day: 'numeric', month: 'short', year: 'numeric' })}
+          {' · '}Ratings and reviews: illustrative sample.{' '}
+          <Link to="/sources" className="font-semibold text-sky underline-offset-2 hover:underline">Details</Link>
+        </p>
         <p><strong className="text-ink">About Xchange Desk.</strong> Xchange Desk is an independent comparison tool. It is not an exchange house, it can't exchange money for you, and it is not affiliated with the providers listed. The optional Ask Xchange assistant uses Claude from Anthropic: what you type in the chat is sent to Anthropic to produce answers, and Xchange Desk does not store it.</p>
         <p>Indicative rates only. Market rates are cross-checked across several public feeds (Yahoo Finance FX spot, ECB, open.er-api.com and fawazahmed0), and a quote that disagrees with the others is discarded; the freshest remaining one is used, when you load or refresh the page. Provider rates are modelled from each exchange house's typical spread, the exchange houses and banks, their branch locations and any opening hours come from OpenStreetMap (© OpenStreetMap contributors) and can be incomplete or out of date. Ratings and reviews are a pre-loaded sample for the first eight exchange houses only, and are not loaded for the rest. Banks are listed from OpenStreetMap, so confirm that a branch offers currency exchange. Confirm the final rate and fee at the counter or in the provider's app before you transact.</p>
+        <p>© {new Date().getFullYear()} Xchange Desk · <a className="font-semibold text-sky underline-offset-2 hover:underline" href="mailto:xchangedesk@gmail.com">xchangedesk@gmail.com</a></p>
       </footer>
 
       {compareRows.length >= 2 && <CompareTray rows={compareRows} s={s} onRemove={toggleCompare} onClear={() => setCompare([])} />}
       {qrOpen && <QrModal onClose={() => setQrOpen(false)} />}
       <ChatLauncher app={chatApp} lift={compareRows.length >= 2} />
     </div>
+    </>
   );
 }
