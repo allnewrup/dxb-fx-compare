@@ -1,5 +1,5 @@
 import React from 'react';
-import PageShell, { H2, H3, P, UL, A, Note, Table, operatorPhrase } from './PageShell.jsx';
+import PageShell, { H2, H3, P, UL, A, Note, Table, operatorSentence } from './PageShell.jsx';
 import { Link } from '../lib/router.jsx';
 import { PAGES, SITE } from '../data/site.js';
 
@@ -11,7 +11,7 @@ export default function Privacy() {
       <P>This policy explains what happens to information when you use {SITE.name} at {SITE.url}. The short version: there are no accounts, no advertising and no analytics trackers, we do not keep a database about you, and your location stays in your browser. Some third-party services do receive requests from your browser, and they are listed below.</P>
 
       <H2>Who is responsible</H2>
-      <P>{SITE.name} is run by {operatorPhrase()}. Contact: <A href={`mailto:${SITE.email}`}>{SITE.email}</A>.</P>
+      <P>{operatorSentence()} Contact: <A href={`mailto:${SITE.email}`}>{SITE.email}</A>.</P>
 
       <H2>What we collect</H2>
       <UL>

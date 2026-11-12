@@ -1,5 +1,5 @@
 import React from 'react';
-import PageShell, { H2, P, UL, A, operatorPhrase } from './PageShell.jsx';
+import PageShell, { H2, P, UL, A, operatorSentence } from './PageShell.jsx';
 import { Link } from '../lib/router.jsx';
 import { PAGES, SITE } from '../data/site.js';
 
@@ -38,7 +38,7 @@ export default function About({ data }) {
       <P>The order of the results is decided by the numbers alone: the best total for the direction you chose, or whichever sort you pick. No provider can pay to be listed, ranked higher or removed. {SITE.name} currently shows no advertising and no affiliate links. If that ever changes, this page and the privacy policy will say so.</P>
 
       <H2>Who runs it</H2>
-      <P>{SITE.name} is run by {operatorPhrase()}. You can reach us at <A href={`mailto:${SITE.email}`}>{SITE.email}</A> or through the <Link to="/contact" className="font-semibold text-sky underline underline-offset-2">contact page</Link>.</P>
+      <P>{operatorSentence()} You can reach us at <A href={`mailto:${SITE.email}`}>{SITE.email}</A> or through the <Link to="/contact" className="font-semibold text-sky underline underline-offset-2">contact page</Link>.</P>
 
       <H2>Found a mistake?</H2>
       <P>Branch details come from OpenStreetMap, which anyone can improve at <A href="https://www.openstreetmap.org">openstreetmap.org</A>. For anything else, a wrong rate calculation, a missing provider or a provider that wants its information corrected, please <Link to="/contact" className="font-semibold text-sky underline underline-offset-2">get in touch</Link>.</P>

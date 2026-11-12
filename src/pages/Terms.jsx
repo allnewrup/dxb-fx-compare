@@ -1,5 +1,5 @@
 import React from 'react';
-import PageShell, { H2, P, UL, A, Note, operatorPhrase } from './PageShell.jsx';
+import PageShell, { H2, P, UL, A, Note } from './PageShell.jsx';
 import { Link } from '../lib/router.jsx';
 import { PAGES, SITE } from '../data/site.js';
 
@@ -9,7 +9,7 @@ const L = ({ to, children }) => <Link to={to} className="font-semibold text-sky 
 export default function Terms() {
   return (
     <PageShell path={me.path} title={me.title} desc={me.desc} updated={SITE.legalUpdated}>
-      <P>These terms apply when you use {SITE.name} at {SITE.url} (the "Service"), run by {operatorPhrase()}. By using the Service you agree to them. If you do not agree, please do not use it.</P>
+      <P>These terms apply when you use {SITE.name} at {SITE.url} (the "Service"), which is operated by {SITE.operator || SITE.name} as an independent business. By using the Service you agree to them. If you do not agree, please do not use it.</P>
 
       <H2>1. What the Service is</H2>
       <P>{SITE.name} is an information and comparison tool. It is <strong className="text-ink">not an exchange house, bank, broker or money transfer service</strong>. It does not exchange, send, hold or process money, and it is not a party to any transaction between you and a provider. It is not affiliated with, endorsed by or paid by the providers it lists.</P>

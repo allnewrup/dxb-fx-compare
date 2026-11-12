@@ -18,7 +18,8 @@ export const Table = ({ head, rows }) => (
 );
 
 /** Who runs the site, as one phrase. */
-export const operatorPhrase = () => SITE.operator || 'an independent business';
+/** The operating business as one sentence. When the operator is simply the site's own name, it reads "Xchange Desk is an independent business." */
+export const operatorSentence = () => (SITE.operator && SITE.operator !== SITE.name ? `${SITE.name} is run by ${SITE.operator}.` : `${SITE.name} is an independent business.`);
 
 export function SiteNav({ current, className = '' }) {
   return (

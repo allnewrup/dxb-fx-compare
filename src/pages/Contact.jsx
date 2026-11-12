@@ -1,5 +1,5 @@
 import React from 'react';
-import PageShell, { H2, P, UL, A, Note, operatorPhrase } from './PageShell.jsx';
+import PageShell, { H2, P, UL, A, Note, operatorSentence } from './PageShell.jsx';
 import { Link } from '../lib/router.jsx';
 import { PAGES, SITE } from '../data/site.js';
 
@@ -27,7 +27,7 @@ export default function Contact() {
       <Note><strong>Please do not send passport numbers, Emirates ID numbers, card or bank details, or other sensitive personal information by email.</strong> We never need them.</Note>
 
       <H2>Who you are writing to</H2>
-      <P>{SITE.name} is run by {operatorPhrase()}.</P>
+      <P>{operatorSentence()}</P>
     </PageShell>
   );
 }
