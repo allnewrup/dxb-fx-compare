@@ -219,7 +219,7 @@ export default function App() {
       {/* Header */}
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl">AED</span>
+          <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl" aria-hidden="true">XD</span>
           <div>
             <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-wide">Xchange Desk</h1>
             <p className="text-sm text-steel-600">Compare money exchange rates across UAE exchange houses &amp; banks</p>

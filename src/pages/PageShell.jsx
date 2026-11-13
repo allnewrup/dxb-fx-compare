@@ -42,7 +42,7 @@ export default function PageShell({ path, title, desc, updated, children }) {
     <div className="mx-auto max-w-[1000px] px-4 pb-10 pt-4 sm:px-6">
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-3 no-underline">
-          <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl">AED</span>
+          <span className="badge-gold !rounded-xl !px-3 !py-1.5 !text-2xl" aria-hidden="true">XD</span>
           <span>
             <span className="block font-display text-3xl font-bold uppercase leading-none tracking-wide text-ink">{SITE.name}</span>
             <span className="text-sm text-steel-600">← Back to the rate comparison</span>
