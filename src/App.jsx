@@ -14,6 +14,7 @@ import { QrBadge, QrModal } from './components/QrBadge.jsx';
 import ChatLauncher from './components/ChatLauncher.jsx';
 import { useRoute, Link } from './lib/router.jsx';
 import { SiteNav } from './pages/PageShell.jsx';
+import { Analytics } from '@vercel/analytics/react';
 
 // Information pages load only when visited.
 const PAGE_VIEWS = {
@@ -384,6 +385,7 @@ export default function App() {
       {qrOpen && <QrModal onClose={() => setQrOpen(false)} />}
       <ChatLauncher app={chatApp} lift={compareRows.length >= 2} />
     </div>
+    <Analytics />
     </>
   );
 }
