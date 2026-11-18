@@ -3,13 +3,16 @@
 // Only brands whose site was checked by hand are listed: the page loaded (or sits behind the site's own bot check)
 // and it identifies itself as that company in the UAE, or several independent sources agree on the address.
 // Everything else deliberately has no entry, so its name stays plain text instead of linking somewhere unconfirmed.
-// Not listed on purpose: Al Fardan, Sharaf, Wall Street, Al Dahab, Al Ahalia, UAE Exchange / Unimoni (could not be confirmed),
-// Travelex (travelex.ae is an unrelated travel agency) and Union National Bank (merged into ADCB in 2019).
+// Not listed on purpose: Sharaf (sharafexchange.com has an expired security certificate, so browsers warn visitors),
+// Wall Street, Al Ahalia and UAE Exchange / Unimoni (no address could be confirmed), Travelex (travelex.ae is an unrelated
+// travel agency) and Union National Bank (merged into ADCB in 2019).
 export const WEBSITES_CHECKED = '2026-11-18';
 
 export const WEBSITES = {
-  // exchange houses
+  // exchange houses (9)
   alansari: 'https://alansariexchange.com',
+  alfardan: 'https://alfardanexchange.com',
+  aldahab: 'https://aldahabexchange.ae',
   lulu: 'https://luluexchange.com',
   rostamani: 'https://alrostamaniexchange.com',
   joyalukkas: 'https://www.joyalukkasexchange.com',
