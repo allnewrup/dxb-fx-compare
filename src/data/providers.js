@@ -3,6 +3,7 @@
 // Real OSM branches replace the placeholder coordinates of the seeded providers.
 import { PROVIDERS as SEED, AREAS } from './seed.js';
 import osm from './osm-uae.json';
+import { WEBSITES } from './websites.js';
 
 export const OSM_META = { fetchedAt: osm.fetchedAt, source: osm.source, total: osm.items.length };
 
@@ -121,7 +122,7 @@ const profiled = SEED.map((p) => {
   const g = groups.get(seedKeys[p.id]);
   used.add(seedKeys[p.id]);
   return {
-    ...p, type: 'exchange', spreadBasis: 'profile', source: g ? 'osm' : 'seed',
+    ...p, type: 'exchange', spreadBasis: 'profile', source: g ? 'osm' : 'seed', website: WEBSITES[p.id],
     branches: g ? g.items.map((it, i) => toBranch(it, p.id, i)) : p.branches,
   };
 });
@@ -130,7 +131,7 @@ const MIN_BANK_BRANCHES = 3; // only established retail banks; one-off bank offi
 const discovered = [...groups.values()]
   .filter((g) => !used.has(g.key) && (g.type === 'exchange' || g.items.length >= MIN_BANK_BRANCHES))
   .map((g) => ({
-    id: `osm-${g.key}`, name: g.name, mark: initials(g.name), hue: hueFor(g.key), type: g.type,
+    id: `osm-${g.key}`, name: g.name, mark: initials(g.name), hue: hueFor(g.key), type: g.type, website: WEBSITES[g.key],
     rating: null, reviewCount: null, // no ratings are invented; connect Google Places to fill these in
     // No published spreads exist for these, so they all use one category average (banks typically charge more than bureaus).
     margin: g.type === 'bank' ? 1.8 : 0.65, fee: { bank: g.type === 'bank' ? 25 : 12 }, bias: {}, spreadBasis: 'category', source: 'osm',

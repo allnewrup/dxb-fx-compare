@@ -73,3 +73,16 @@ export const Icon = {
   qr: (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" {...p}><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v3M14 20h3M20 20h1" /></svg>),
   close: (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" {...p}><path d="M5 5l14 14M19 5L5 19" /></svg>),
 };
+
+/** A provider's name; a link to its official website (new tab) only when we have a verified address for it. */
+export function ProviderLink({ provider, className = '', children }) {
+  const label = children ?? provider.name;
+  if (!provider.website) return <>{label}</>;
+  return (
+    <a
+      href={provider.website} target="_blank" rel="noopener noreferrer"
+      className={`underline-offset-4 hover:text-sky hover:underline ${className}`}
+      aria-label={`${provider.name} official website (opens in a new tab)`} title="Open the official website"
+    >{label}<span aria-hidden="true" className="ml-1 align-super text-[.55em] text-sky">↗</span></a>
+  );
+}

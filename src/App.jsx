@@ -12,6 +12,7 @@ import ReviewsDrawer from './components/ReviewsDrawer.jsx';
 import CompareTray from './components/CompareTray.jsx';
 import { QrBadge, QrModal } from './components/QrBadge.jsx';
 import ChatLauncher from './components/ChatLauncher.jsx';
+import { ProviderLink } from './components/ui.jsx';
 import { useRoute, Link } from './lib/router.jsx';
 import { SiteNav } from './pages/PageShell.jsx';
 
@@ -294,7 +295,7 @@ export default function App() {
                     <li key={x.b.id} className="well flex flex-col gap-1 p-2.5">
                       <div className="flex items-center gap-2">
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-go text-xs font-bold text-white">{i + 1}</span>
-                        <strong className="min-w-0 truncate">{x.p.name}</strong>
+                        <strong className="min-w-0 truncate"><ProviderLink provider={x.p} /></strong>
                       </div>
                       <p className="text-sm text-steel-600">{x.b.area} · <strong className="text-ink">{x.dist < 1 ? `${Math.round(x.dist * 1000)} m` : `${x.dist.toFixed(1)} km`}</strong> away · {fmtNum(x.rate, x.digits)}</p>
                       <div className="flex gap-2">

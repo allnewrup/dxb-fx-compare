@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mark, Stars, FlipRate, Pill, Icon } from './ui.jsx';
+import { Mark, Stars, FlipRate, Pill, Icon, ProviderLink } from './ui.jsx';
 import { fmtNum, rateDigits, ageLabel, isOpenNow, hoursLabel, directionsUrl, mapsUrl, reviewsUrl } from '../lib/pricing.js';
 
 function estimateLabel(quotedAt, live, daily) {
@@ -36,7 +36,7 @@ export default function ProviderCard({ row, s, quotedAt, live, daily, distKm, se
           <div className="flex items-start gap-3">
             <Mark provider={p} />
             <div className="min-w-0">
-              <h3 className="font-display text-[22px] font-bold leading-tight tracking-wide">{p.name}</h3>
+              <h3 className="font-display text-[22px] font-bold leading-tight tracking-wide"><ProviderLink provider={p} /></h3>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                 {p.rating != null ? (
                   <>

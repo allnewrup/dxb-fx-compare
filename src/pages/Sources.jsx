@@ -3,6 +3,7 @@ import PageShell, { H2, P, UL, A, Note, Table } from './PageShell.jsx';
 import { Link } from '../lib/router.jsx';
 import { PAGES, SITE } from '../data/site.js';
 import { ageLabel } from '../lib/pricing.js';
+import { WEBSITES_CHECKED } from '../data/websites.js';
 
 const me = PAGES.find((p) => p.path === '/sources');
 /* global __OSM_FETCHED__, __PLACES_FETCHED__, __BUILD_TIME__ */
@@ -64,6 +65,9 @@ export default function Sources({ data }) {
         ]}
       />
       <P>Branch data is a snapshot, refreshed when we rebuild it, not a live feed. A branch may have opened, closed, moved or changed its hours since. Banks are listed only for brands with three or more branches.</P>
+
+      <H2>Provider website links</H2>
+      <P>Where a provider's name is a link, it goes to that company's official website in a new tab. {SITE.name} checked each address by hand on {new Date(WEBSITES_CHECKED + 'T12:00:00+04:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Dubai' })} and only links the ones it could confirm; names without a link have not been confirmed. Sites change, so tell us if a link is wrong.</P>
 
       <H2>Ratings and reviews</H2>
       <P>None are shown. {SITE.name} has no live source for them and does not invent any. Use the "Reviews on Google" link on a provider for current ratings and reviews.</P>
